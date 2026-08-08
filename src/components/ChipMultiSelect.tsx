@@ -1,17 +1,28 @@
-/** Checkbox-based chip group. No client JS: the checked look is pure CSS
- * (peer-checked), so this works as plain form fields inside a native
- * <form method="get">, e.g. on the search page's server-rendered filters. */
+/** Checkbox-based chip group with two modes:
+ * - Uncontrolled (no onChange): plain form fields with defaultChecked, for
+ *   native <form method="get"> submission (e.g. the search page filters).
+ * - Controlled (onChange provided): checked + onChange, for pages that read
+ *   the selection in JS and save it themselves (e.g. profile edit). */
 export function ChipMultiSelect({
   label,
   name,
   options,
   selected,
+  onChange,
 }: {
   label: string;
   name: string;
   options: readonly string[];
   selected: string[];
+  onChange?: (next: string[]) => void;
 }) {
+  const controlled = !!onChange;
+
+  function toggle(value: string) {
+    if (!onChange) return;
+    onChange(selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value]);
+  }
+
   return (
     <fieldset>
       <legend className="mb-1.5 text-xs font-semibold">{label}</legend>
@@ -22,7 +33,9 @@ export function ChipMultiSelect({
               type="checkbox"
               name={name}
               value={opt}
-              defaultChecked={selected.includes(opt)}
+              checked={controlled ? selected.includes(opt) : undefined}
+              defaultChecked={controlled ? undefined : selected.includes(opt)}
+              onChange={controlled ? () => toggle(opt) : undefined}
               className="peer sr-only"
             />
             <span className="rounded-full border border-line bg-paper px-2.5 py-1 text-xs font-medium text-ink/70 transition-colors peer-checked:border-brass peer-checked:bg-brass peer-checked:text-ink hover:border-brass">

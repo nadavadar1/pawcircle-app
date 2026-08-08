@@ -180,6 +180,23 @@ create policy "reviews are public" on reviews
 -- RPC FUNCTIONS (SECURITY DEFINER — controlled write paths)
 -- ─────────────────────────────────────────────────────────────
 
+-- profiles.phone is column-revoked from anon/authenticated (see grants above)
+-- so strangers can never select it directly. That also blocks a user from
+-- reading back their OWN phone to edit it — this RPC is the one safe way
+-- back in, hard-scoped to auth.uid() so it can never return anyone else's.
+create or replace function get_my_profile()
+returns table (id uuid, role text, full_name text, phone text, photo_url text, city text)
+language plpgsql
+security definer
+as $$
+begin
+  return query
+    select p.id, p.role, p.full_name, p.phone, p.photo_url, p.city
+    from profiles p
+    where p.id = auth.uid();
+end;
+$$;
+
 create or replace function create_booking_request(
   p_walker_id uuid,
   p_dog_id uuid,

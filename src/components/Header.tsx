@@ -33,10 +33,13 @@ export function Header() {
         <Link href="/" className="font-[var(--font-display)] text-lg font-bold text-ink">
           Paw<span className="text-rust">Circle</span>
         </Link>
-        <nav className="flex items-center gap-4 text-sm">
+        <nav className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           {email === undefined ? null : email ? (
             <>
-              <span className="text-ink/70">{email}</span>
+              <Link href="/search" className="text-ink/70 hover:text-rust">חיפוש</Link>
+              <Link href="/my-bookings" className="text-ink/70 hover:text-rust">ההליכות שלי</Link>
+              <Link href="/dashboard" className="text-ink/70 hover:text-rust">לוח בקשות</Link>
+              <Link href="/profile/edit" className="text-ink/70 hover:text-rust">הפרופיל שלי</Link>
               <button onClick={signOut} className="text-rust hover:underline">
                 התנתקות
               </button>
