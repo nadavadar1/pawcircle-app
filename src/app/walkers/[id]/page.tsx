@@ -103,7 +103,14 @@ export default async function WalkerProfilePage({
         )}
 
         <div className="mt-5">
-          {user ? (
+          {user?.id === walker.id ? (
+            <p className="text-sm text-ink/60">
+              זה הפרופיל הציבורי שלך.{" "}
+              <Link href="/profile/edit" className="text-rust underline">
+                לעריכה
+              </Link>
+            </p>
+          ) : user ? (
             <BookingRequestForm walkerId={walker.id} hourlyRate={walker.hourly_rate_ils} />
           ) : (
             <Link
