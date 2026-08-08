@@ -1,14 +1,20 @@
 import Link from "next/link";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { CITIES, SPECIALTIES, DOG_SIZES } from "@/lib/constants";
+import { ChipMultiSelect } from "@/components/ChipMultiSelect";
 
 type SearchParams = {
   minPrice?: string;
   maxPrice?: string;
-  size?: string;
-  area?: string;
-  specialty?: string;
+  size?: string | string[];
+  area?: string | string[];
+  specialty?: string | string[];
 };
+
+function toArray(v: string | string[] | undefined): string[] {
+  if (!v) return [];
+  return Array.isArray(v) ? v : [v];
+}
 
 type WalkerRow = {
   id: string;
@@ -37,6 +43,10 @@ export default async function SearchPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
+  const sizes = toArray(params.size);
+  const areas = toArray(params.area);
+  const specialties = toArray(params.specialty);
+
   const supabase = await getSupabaseServerClient();
 
   let query = supabase
@@ -46,9 +56,9 @@ export default async function SearchPage({
 
   if (params.minPrice) query = query.gte("hourly_rate_ils", Number(params.minPrice));
   if (params.maxPrice) query = query.lte("hourly_rate_ils", Number(params.maxPrice));
-  if (params.size) query = query.contains("dog_size_compatibility", [params.size]);
-  if (params.area) query = query.contains("service_areas", [params.area]);
-  if (params.specialty) query = query.contains("specialties", [params.specialty]);
+  if (sizes.length > 0) query = query.overlaps("dog_size_compatibility", sizes);
+  if (areas.length > 0) query = query.overlaps("service_areas", areas);
+  if (specialties.length > 0) query = query.overlaps("specialties", specialties);
 
   const { data: walkers } = await query.returns<WalkerRow[]>();
   const ids = (walkers ?? []).map((w) => w.id);
@@ -78,43 +88,23 @@ export default async function SearchPage({
     <main className="mx-auto max-w-3xl px-6 py-10">
       <h1 className="mb-6 text-2xl font-bold text-pine">חיפוש מטיילים</h1>
 
-      <form method="get" className="mb-8 grid grid-cols-2 gap-3 rounded border border-line bg-paper-hi p-4 sm:grid-cols-4">
-        <label className="flex flex-col gap-1 text-xs font-semibold">
-          מחיר מ-
-          <input type="number" name="minPrice" defaultValue={params.minPrice} className="rounded border border-line bg-paper px-2 py-1.5 font-normal" />
-        </label>
-        <label className="flex flex-col gap-1 text-xs font-semibold">
-          עד
-          <input type="number" name="maxPrice" defaultValue={params.maxPrice} className="rounded border border-line bg-paper px-2 py-1.5 font-normal" />
-        </label>
-        <label className="flex flex-col gap-1 text-xs font-semibold">
-          גודל כלב
-          <select name="size" defaultValue={params.size ?? ""} className="rounded border border-line bg-paper px-2 py-1.5 font-normal">
-            <option value="">הכל</option>
-            {DOG_SIZES.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs font-semibold">
-          אזור
-          <select name="area" defaultValue={params.area ?? ""} className="rounded border border-line bg-paper px-2 py-1.5 font-normal">
-            <option value="">הכל</option>
-            {CITIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </label>
-        <label className="col-span-2 flex flex-col gap-1 text-xs font-semibold sm:col-span-3">
-          התמחות
-          <select name="specialty" defaultValue={params.specialty ?? ""} className="rounded border border-line bg-paper px-2 py-1.5 font-normal">
-            <option value="">הכל</option>
-            {SPECIALTIES.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </label>
-        <button type="submit" className="self-end rounded bg-brass px-4 py-1.5 font-bold text-ink">
+      <form method="get" className="mb-8 flex flex-col gap-4 rounded border border-line bg-paper-hi p-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <label className="flex flex-col gap-1 text-xs font-semibold">
+            מחיר מ-
+            <input type="number" name="minPrice" defaultValue={params.minPrice} className="rounded border border-line bg-paper px-2 py-1.5 font-normal" />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold">
+            עד
+            <input type="number" name="maxPrice" defaultValue={params.maxPrice} className="rounded border border-line bg-paper px-2 py-1.5 font-normal" />
+          </label>
+        </div>
+
+        <ChipMultiSelect label="גודל כלב (אפשר כמה)" name="size" options={DOG_SIZES} selected={sizes} />
+        <ChipMultiSelect label="אזור (אפשר כמה)" name="area" options={CITIES} selected={areas} />
+        <ChipMultiSelect label="התמחות (אפשר כמה)" name="specialty" options={SPECIALTIES} selected={specialties} />
+
+        <button type="submit" className="self-start rounded bg-brass px-4 py-1.5 text-sm font-bold text-ink">
           סינון
         </button>
       </form>
