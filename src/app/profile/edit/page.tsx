@@ -183,7 +183,7 @@ export default function ProfileEditPage() {
             תעריף לשעה (₪)
             <input type="number" min={1} value={rate} onChange={(e) => setRate(Number(e.target.value))} className="rounded border border-line bg-paper px-2 py-1.5 font-normal" />
           </label>
-          <ChipMultiSelect label="אזורי שירות" name="service_areas" options={CITIES} selected={serviceAreas} onChange={setServiceAreas} />
+          <ChipMultiSelect label="אזורי שירות" name="service_areas" options={CITIES} selected={serviceAreas} onChange={setServiceAreas} searchable />
           <ChipMultiSelect label="גדלי כלבים" name="dog_sizes" options={DOG_SIZES} selected={dogSizes} onChange={setDogSizes} />
           <ChipMultiSelect label="התמחויות" name="specialties" options={SPECIALTIES} selected={specialties} onChange={setSpecialties} />
           <label className="flex flex-col gap-1 text-xs font-semibold">

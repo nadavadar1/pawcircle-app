@@ -206,7 +206,7 @@ export default function OnboardingPage() {
               />
             </label>
 
-            <ChipMultiSelect label="אזורי שירות (אפשר כמה)" name="service_areas" options={CITIES} selected={serviceAreas} onChange={setServiceAreas} />
+            <ChipMultiSelect label="אזורי שירות (אפשר כמה)" name="service_areas" options={CITIES} selected={serviceAreas} onChange={setServiceAreas} searchable />
             <ChipMultiSelect label="גדלי כלבים שנוח לכם איתם" name="dog_sizes" options={DOG_SIZES} selected={dogSizes} onChange={setDogSizes} />
             <ChipMultiSelect label="התמחויות (אופציונלי)" name="specialties" options={SPECIALTIES} selected={specialties} onChange={setSpecialties} />
 

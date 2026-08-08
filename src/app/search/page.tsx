@@ -107,7 +107,7 @@ export default async function SearchPage({
         </div>
 
         <ChipMultiSelect label="גודל כלב (אפשר כמה)" name="size" options={DOG_SIZES} selected={sizes} />
-        <ChipMultiSelect label="אזור (אפשר כמה)" name="area" options={CITIES} selected={areas} />
+        <ChipMultiSelect label="אזור (אפשר כמה)" name="area" options={CITIES} selected={areas} searchable />
         <ChipMultiSelect label="התמחות (אפשר כמה)" name="specialty" options={SPECIALTIES} selected={specialties} />
 
         <button type="submit" className="self-start rounded bg-brass px-4 py-1.5 text-sm font-bold text-ink">
