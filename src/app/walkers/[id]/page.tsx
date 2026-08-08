@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { BookingRequestForm } from "@/components/BookingRequestForm";
 
 export default async function WalkerProfilePage({
   params,
@@ -86,13 +87,7 @@ export default async function WalkerProfilePage({
 
         <div className="mt-5">
           {user ? (
-            <button
-              disabled
-              title="בקשת הליכה תהיה זמינה בקרוב"
-              className="rounded bg-brass px-4 py-2 font-bold text-ink opacity-60"
-            >
-              בקשת הליכה (בקרוב)
-            </button>
+            <BookingRequestForm walkerId={walker.id} hourlyRate={walker.hourly_rate_ils} />
           ) : (
             <Link
               href="/login"

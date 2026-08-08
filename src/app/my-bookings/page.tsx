@@ -6,7 +6,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type Booking = {
   id: string;
-  owner_id: string;
+  walker_id: string;
   dog_id: string;
   requested_time: string;
   duration_minutes: number;
@@ -16,20 +16,18 @@ type Booking = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  requested: "ממתין לתשובה שלך",
+  requested: "ממתין לאישור",
   accepted: "אושר",
   declined: "נדחה",
-  cancelled: "בוטל ע\"י הבעלים",
+  cancelled: "בוטל",
   completed: "הושלם",
 };
 
-export default function DashboardPage() {
+export default function MyBookingsPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
-  const [isWalker, setIsWalker] = useState(false);
-  const [availableNow, setAvailableNow] = useState(true);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [ownerNames, setOwnerNames] = useState<Map<string, string>>(new Map());
+  const [walkerNames, setWalkerNames] = useState<Map<string, string>>(new Map());
   const [dogNames, setDogNames] = useState<Map<string, string>>(new Map());
   const [contactByBooking, setContactByBooking] = useState<Map<string, string>>(new Map());
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -42,35 +40,21 @@ export default function DashboardPage() {
       return;
     }
 
-    const { data: walkerProfile } = await supabase
-      .from("walker_profiles")
-      .select("available_now")
-      .eq("id", userData.user.id)
-      .maybeSingle();
-
-    if (!walkerProfile) {
-      setIsWalker(false);
-      setReady(true);
-      return;
-    }
-    setIsWalker(true);
-    setAvailableNow(walkerProfile.available_now);
-
     const { data: bookingsData } = await supabase
       .from("bookings")
       .select("*")
-      .eq("walker_id", userData.user.id)
+      .eq("owner_id", userData.user.id)
       .order("requested_time", { ascending: false })
       .returns<Booking[]>();
 
     setBookings(bookingsData ?? []);
 
-    const ownerIds = [...new Set((bookingsData ?? []).map((b) => b.owner_id))];
+    const walkerIds = [...new Set((bookingsData ?? []).map((b) => b.walker_id))];
     const dogIds = [...new Set((bookingsData ?? []).map((b) => b.dog_id))];
 
-    if (ownerIds.length > 0) {
-      const { data: owners } = await supabase.from("profiles").select("id, full_name").in("id", ownerIds);
-      setOwnerNames(new Map((owners ?? []).map((o) => [o.id, o.full_name])));
+    if (walkerIds.length > 0) {
+      const { data: walkers } = await supabase.from("profiles").select("id, full_name").in("id", walkerIds);
+      setWalkerNames(new Map((walkers ?? []).map((w) => [w.id, w.full_name])));
     }
     if (dogIds.length > 0) {
       const { data: dogs } = await supabase.from("dogs").select("id, name").in("id", dogIds);
@@ -84,19 +68,18 @@ export default function DashboardPage() {
     load();
   }, [load]);
 
-  async function toggleAvailable() {
-    const supabase = getSupabaseBrowserClient();
-    const next = !availableNow;
-    setAvailableNow(next);
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return;
-    await supabase.from("walker_profiles").update({ available_now: next }).eq("id", userData.user.id);
-  }
-
-  async function respond(id: string, status: "accepted" | "declined") {
+  async function cancelBooking(id: string) {
     setBusyId(id);
     const supabase = getSupabaseBrowserClient();
-    await supabase.rpc("set_booking_status", { p_booking_id: id, p_new_status: status });
+    await supabase.rpc("set_booking_status", { p_booking_id: id, p_new_status: "cancelled" });
+    setBusyId(null);
+    load();
+  }
+
+  async function markCompleted(id: string) {
+    setBusyId(id);
+    const supabase = getSupabaseBrowserClient();
+    await supabase.rpc("set_booking_status", { p_booking_id: id, p_new_status: "completed" });
     setBusyId(null);
     load();
   }
@@ -108,40 +91,25 @@ export default function DashboardPage() {
     const row = (data as { owner_phone: string; walker_phone: string }[] | null)?.[0];
     setBusyId(null);
     if (row) {
-      setContactByBooking((prev) => new Map(prev).set(id, row.owner_phone));
+      setContactByBooking((prev) => new Map(prev).set(id, row.walker_phone));
     }
   }
 
   if (!ready) return null;
 
-  if (!isWalker) {
-    return (
-      <main className="mx-auto max-w-2xl px-6 py-16 text-center">
-        <h1 className="mb-2 text-2xl font-bold text-pine">לוח הבקשות</h1>
-        <p className="text-ink/70">המסך הזה מיועד למטיילים. בעלי כלבים רואים את הבקשות שלהם ב-<a href="/my-bookings" className="text-rust underline">ההליכות שלי</a>.</p>
-      </main>
-    );
-  }
-
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-pine">לוח הבקשות שלך</h1>
-        <label className="flex items-center gap-2 text-sm font-semibold">
-          זמין/ה לבקשות חדשות
-          <input type="checkbox" checked={availableNow} onChange={toggleAvailable} />
-        </label>
-      </div>
+      <h1 className="mb-6 text-2xl font-bold text-pine">ההליכות שלי</h1>
 
       {bookings.length === 0 ? (
-        <p className="text-ink/70">עדיין אין בקשות הליכה.</p>
+        <p className="text-ink/70">עדיין אין בקשות. אפשר להתחיל מ<a href="/search" className="text-rust underline">חיפוש מטיילים</a>.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {bookings.map((b) => (
             <li key={b.id} className="rounded border border-line bg-paper-hi p-4">
               <div className="mb-1 flex items-center justify-between">
                 <span className="font-semibold text-ink">
-                  {ownerNames.get(b.owner_id) ?? "בעל/ת כלב"} · {dogNames.get(b.dog_id) ?? "כלב"}
+                  {walkerNames.get(b.walker_id) ?? "מטייל/ת"} · {dogNames.get(b.dog_id) ?? "כלב"}
                 </span>
                 <span className="text-sm font-bold text-pine">{STATUS_LABEL[b.status] ?? b.status}</span>
               </div>
@@ -153,31 +121,31 @@ export default function DashboardPage() {
 
               <div className="mt-2 flex flex-wrap gap-2">
                 {b.status === "requested" && (
+                  <button
+                    onClick={() => cancelBooking(b.id)}
+                    disabled={busyId === b.id}
+                    className="rounded border border-rust px-3 py-1 text-sm text-rust disabled:opacity-60"
+                  >
+                    ביטול בקשה
+                  </button>
+                )}
+                {b.status === "accepted" && (
                   <>
                     <button
-                      onClick={() => respond(b.id, "accepted")}
+                      onClick={() => showContact(b.id)}
                       disabled={busyId === b.id}
                       className="rounded bg-brass px-3 py-1 text-sm font-bold text-ink disabled:opacity-60"
                     >
-                      אישור
+                      הצגת פרטי קשר
                     </button>
                     <button
-                      onClick={() => respond(b.id, "declined")}
+                      onClick={() => markCompleted(b.id)}
                       disabled={busyId === b.id}
-                      className="rounded border border-rust px-3 py-1 text-sm text-rust disabled:opacity-60"
+                      className="rounded border border-line px-3 py-1 text-sm text-ink"
                     >
-                      דחייה
+                      סימון כהושלם
                     </button>
                   </>
-                )}
-                {(b.status === "accepted" || b.status === "completed") && (
-                  <button
-                    onClick={() => showContact(b.id)}
-                    disabled={busyId === b.id}
-                    className="rounded bg-brass px-3 py-1 text-sm font-bold text-ink disabled:opacity-60"
-                  >
-                    הצגת פרטי קשר
-                  </button>
                 )}
                 {contactByBooking.has(b.id) && (
                   <p className="w-full text-sm font-[var(--font-mono)] text-pine" dir="ltr">
