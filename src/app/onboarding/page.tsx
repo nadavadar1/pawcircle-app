@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { CITIES, SPECIALTIES, DOG_SIZES } from "@/lib/constants";
 import { Loading } from "@/components/Loading";
+import { ChipMultiSelect } from "@/components/ChipMultiSelect";
 
 type Role = "owner" | "walker" | "both";
 
@@ -19,6 +20,8 @@ export default function OnboardingPage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState<string>(CITIES[0]);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photoFromGoogle, setPhotoFromGoogle] = useState(false);
 
   // walker-only fields
   const [bio, setBio] = useState("");
@@ -36,13 +39,21 @@ export default function OnboardingPage() {
         return;
       }
       setUserId(data.user.id);
+
+      // Google sign-in fills these in on the auth user automatically —
+      // prefill the form so returning-via-Google users barely have to type.
+      const meta = data.user.user_metadata ?? {};
+      const googleName = meta.full_name ?? meta.name;
+      const googlePhoto = meta.avatar_url ?? meta.picture;
+      if (googleName) setFullName(googleName);
+      if (googlePhoto) {
+        setPhotoUrl(googlePhoto);
+        setPhotoFromGoogle(true);
+      }
+
       setCheckingAuth(false);
     });
   }, [router]);
-
-  function toggle(list: string[], value: string, setter: (v: string[]) => void) {
-    setter(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
-  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -58,6 +69,7 @@ export default function OnboardingPage() {
       full_name: fullName,
       phone,
       city,
+      photo_url: photoUrl,
     });
 
     if (profileError) {
@@ -118,6 +130,16 @@ export default function OnboardingPage() {
             </label>
           ))}
         </fieldset>
+
+        {photoUrl && (
+          <div className="flex items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={photoUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
+            {photoFromGoogle && (
+              <p className="text-xs text-ink/60">תמונה ושם מולאו מהחשבון שלך ב-Google</p>
+            )}
+          </div>
+        )}
 
         <label className="flex flex-col gap-1 text-sm font-semibold">
           שם מלא
@@ -184,56 +206,9 @@ export default function OnboardingPage() {
               />
             </label>
 
-            <fieldset>
-              <legend className="mb-2 text-sm font-semibold">אזורי שירות</legend>
-              <select
-                multiple
-                value={serviceAreas}
-                onChange={(e) =>
-                  setServiceAreas(Array.from(e.target.selectedOptions, (o) => o.value))
-                }
-                className="h-40 w-full rounded border border-line bg-paper px-3 py-2 font-normal"
-              >
-                {CITIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-ink/60">Ctrl/Cmd+לחיצה לבחירה מרובה</p>
-            </fieldset>
-
-            <fieldset>
-              <legend className="mb-2 text-sm font-semibold">גדלי כלבים שנוח לכם איתם</legend>
-              <div className="flex gap-4">
-                {DOG_SIZES.map((size) => (
-                  <label key={size} className="flex items-center gap-1.5 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={dogSizes.includes(size)}
-                      onChange={() => toggle(dogSizes, size, setDogSizes)}
-                    />
-                    {size}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            <fieldset>
-              <legend className="mb-2 text-sm font-semibold">התמחויות (אופציונלי)</legend>
-              <div className="flex flex-col gap-1.5">
-                {SPECIALTIES.map((s) => (
-                  <label key={s} className="flex items-center gap-1.5 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={specialties.includes(s)}
-                      onChange={() => toggle(specialties, s, setSpecialties)}
-                    />
-                    {s}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
+            <ChipMultiSelect label="אזורי שירות (אפשר כמה)" name="service_areas" options={CITIES} selected={serviceAreas} onChange={setServiceAreas} />
+            <ChipMultiSelect label="גדלי כלבים שנוח לכם איתם" name="dog_sizes" options={DOG_SIZES} selected={dogSizes} onChange={setDogSizes} />
+            <ChipMultiSelect label="התמחויות (אופציונלי)" name="specialties" options={SPECIALTIES} selected={specialties} onChange={setSpecialties} />
 
             <label className="flex flex-col gap-1 text-sm font-semibold">
               שנות ניסיון (אופציונלי)
