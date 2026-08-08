@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { Loading } from "@/components/Loading";
 
 type Booking = {
   id: string;
@@ -112,7 +113,7 @@ export default function DashboardPage() {
     }
   }
 
-  if (!ready) return null;
+  if (!ready) return <Loading />;
 
   if (!isWalker) {
     return (

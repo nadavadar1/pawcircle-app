@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { ReviewForm } from "@/components/ReviewForm";
+import { Loading } from "@/components/Loading";
 
 type Booking = {
   id: string;
@@ -103,7 +104,7 @@ export default function MyBookingsPage() {
     }
   }
 
-  if (!ready) return null;
+  if (!ready) return <Loading />;
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">

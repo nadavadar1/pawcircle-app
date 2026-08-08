@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { CITIES, SPECIALTIES, DOG_SIZES } from "@/lib/constants";
+import { Loading } from "@/components/Loading";
 
 type Role = "owner" | "walker" | "both";
 
@@ -86,7 +87,7 @@ export default function OnboardingPage() {
     router.push(role === "owner" ? "/search" : "/dashboard");
   }
 
-  if (checkingAuth) return null;
+  if (checkingAuth) return <Loading />;
 
   return (
     <main className="mx-auto max-w-lg px-6 py-12">

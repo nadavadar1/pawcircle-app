@@ -7,6 +7,7 @@ import { CITIES, SPECIALTIES, DOG_SIZES } from "@/lib/constants";
 import { ChipMultiSelect } from "@/components/ChipMultiSelect";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { DogEditor, type Dog } from "@/components/DogEditor";
+import { Loading } from "@/components/Loading";
 
 type MyProfile = {
   id: string;
@@ -140,7 +141,7 @@ export default function ProfileEditPage() {
     setWalkerSaved(true);
   }
 
-  if (!ready || !profile) return null;
+  if (!ready || !profile) return <Loading />;
 
   return (
     <main className="mx-auto max-w-lg px-6 py-10">
