@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Frank_Ruhl_Libre, Assistant, IBM_Plex_Mono } from "next/font/google";
+import { Header } from "@/components/Header";
 import "./globals.css";
 
 const frankRuhl = Frank_Ruhl_Libre({
@@ -41,7 +42,8 @@ export default function RootLayout({
       className={`${frankRuhl.variable} ${assistant.variable} ${ibmPlexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)] font-[var(--font-body)]">
-        {children}
+        <Header />
+        <div className="flex flex-1 flex-col">{children}</div>
       </body>
     </html>
   );
