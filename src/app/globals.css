@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #17231c;
+  --pine: #1f3b2e;
+  --pine-dark: #152a20;
+  --paper: #f3ecdc;
+  --paper-hi: #fbf7ec;
+  --brass: #c9982f;
+  --brass-hi: #e0b658;
+  --rust: #b5482a;
+  --sage: #7c9a82;
+  --line: rgba(23, 35, 28, 0.14);
+
+  --background: var(--paper);
+  --foreground: var(--ink);
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-pine: var(--pine);
+  --color-pine-dark: var(--pine-dark);
+  --color-paper: var(--paper);
+  --color-paper-hi: var(--paper-hi);
+  --color-brass: var(--brass);
+  --color-brass-hi: var(--brass-hi);
+  --color-rust: var(--rust);
+  --color-sage: var(--sage);
+  --color-line: var(--line);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --font-display: var(--font-frank-ruhl), "Times New Roman", serif;
+  --font-body: var(--font-assistant), "Segoe UI", sans-serif;
+  /* IBM Plex Mono has no Hebrew glyphs in its Google-hosted subset — Hebrew
+     characters fall through to Courier New automatically, same as the
+     landing page. Keep an explicit fallback here rather than relying on
+     the browser's default monospace guess. */
+  --font-mono: var(--font-ibm-plex-mono), "Courier New", monospace;
+
+  --radius-DEFAULT: 3px;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+}
