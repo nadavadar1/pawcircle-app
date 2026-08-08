@@ -35,6 +35,8 @@ type TrustRow = {
   walker_id: string;
   badge_area: string | null;
   is_community_verified: boolean;
+  review_count: number;
+  avg_rating: number | null;
 };
 
 export default async function SearchPage({
@@ -82,7 +84,11 @@ export default async function SearchPage({
       trust: trustById.get(w.id),
     }))
     .filter((r) => r.profile)
-    .sort((a, b) => Number(b.trust?.is_community_verified) - Number(a.trust?.is_community_verified));
+    .sort((a, b) => {
+      const verifiedDiff = Number(b.trust?.is_community_verified) - Number(a.trust?.is_community_verified);
+      if (verifiedDiff !== 0) return verifiedDiff;
+      return (b.trust?.avg_rating ?? 0) - (a.trust?.avg_rating ?? 0);
+    });
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
@@ -117,25 +123,40 @@ export default async function SearchPage({
             <li key={walker.id}>
               <Link
                 href={`/walkers/${walker.id}`}
-                className="block rounded border border-line bg-paper-hi p-4 hover:border-rust"
+                className="flex items-center gap-3 rounded border border-line bg-paper-hi p-4 hover:border-rust"
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-[var(--font-display)] text-lg font-bold text-ink">
-                    {profile!.full_name}
-                  </span>
-                  <span className="font-[var(--font-mono)] text-sm text-pine">
-                    {walker.hourly_rate_ils} ₪/שעה
-                  </span>
+                {profile!.photo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profile!.photo_url} alt="" className="h-12 w-12 flex-shrink-0 rounded-full object-cover" />
+                ) : (
+                  <div className="h-12 w-12 flex-shrink-0 rounded-full bg-line" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-[var(--font-display)] text-lg font-bold text-ink">
+                      {profile!.full_name}
+                    </span>
+                    <span className="font-[var(--font-mono)] text-sm text-pine">
+                      {walker.hourly_rate_ils} ₪/שעה
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-ink/70">{profile!.city}</p>
+                    {trust && trust.review_count > 0 && (
+                      <p className="text-sm font-bold text-brass-hi">
+                        ★ {trust.avg_rating} ({trust.review_count})
+                      </p>
+                    )}
+                  </div>
+                  {trust?.is_community_verified && (
+                    <p className="mt-1 text-xs font-bold text-pine">
+                      ✓ מאומת קהילתית · {trust.badge_area}
+                    </p>
+                  )}
+                  {walker.specialties.length > 0 && (
+                    <p className="mt-1 text-xs text-ink/60">{walker.specialties.join(" · ")}</p>
+                  )}
                 </div>
-                <p className="text-sm text-ink/70">{profile!.city}</p>
-                {trust?.is_community_verified && (
-                  <p className="mt-1 text-xs font-bold text-brass-hi">
-                    ✓ מאומת קהילתית · {trust.badge_area}
-                  </p>
-                )}
-                {walker.specialties.length > 0 && (
-                  <p className="mt-1 text-xs text-ink/60">{walker.specialties.join(" · ")}</p>
-                )}
               </Link>
             </li>
           ))}

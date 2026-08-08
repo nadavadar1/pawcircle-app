@@ -42,15 +42,32 @@ export default async function WalkerProfilePage({
       </Link>
 
       <div className="mb-6 rounded border border-line bg-paper-hi p-6">
-        <div className="mb-2 flex items-center justify-between">
-          <h1 className="font-[var(--font-display)] text-2xl font-bold text-ink">
-            {profile.full_name}
-          </h1>
-          <span className="font-[var(--font-mono)] text-lg text-pine">
-            {walker.hourly_rate_ils} ₪/שעה
-          </span>
+        <div className="mb-2 flex items-start gap-4">
+          {profile.photo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={profile.photo_url} alt="" className="h-16 w-16 flex-shrink-0 rounded-full object-cover" />
+          ) : (
+            <div className="h-16 w-16 flex-shrink-0 rounded-full bg-line" />
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <h1 className="font-[var(--font-display)] text-2xl font-bold text-ink">
+                {profile.full_name}
+              </h1>
+              <span className="font-[var(--font-mono)] text-lg text-pine">
+                {walker.hourly_rate_ils} ₪/שעה
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-ink/70">{profile.city}</p>
+              {trust && trust.review_count > 0 && (
+                <p className="text-sm font-bold text-brass-hi">
+                  ★ {trust.avg_rating} ({trust.review_count} ביקורות)
+                </p>
+              )}
+            </div>
+          </div>
         </div>
-        <p className="mb-2 text-sm text-ink/70">{profile.city}</p>
 
         {trust?.is_community_verified && (
           <p className="mb-3 inline-block rounded bg-brass/20 px-2 py-1 text-xs font-bold text-pine">

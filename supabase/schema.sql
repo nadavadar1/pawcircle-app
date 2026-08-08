@@ -93,19 +93,27 @@ create index on reviews (reviewer_neighborhood);
 
 -- Live "מאומת קהילתית" (community-verified) badge: a walker qualifies once
 -- any single declared neighborhood has 3+ reviews from 3 distinct reviewers.
--- Computed on read, not stored/triggered — never stale, no sync job needed.
+-- Also carries the overall average rating + review count (Uber-style score,
+-- shown alongside the badge — not instead of it). Computed on read, not
+-- stored/triggered — never stale, no sync job needed.
 create view walker_trust_status as
 select
   w.id as walker_id,
   best.badge_area,
   coalesce(best.distinct_reviewers, 0) as distinct_reviewers,
-  coalesce(best.distinct_reviewers, 0) >= 3 as is_community_verified
+  coalesce(best.distinct_reviewers, 0) >= 3 as is_community_verified,
+  coalesce(overall.review_count, 0) as review_count,
+  overall.avg_rating
 from walker_profiles w
 left join lateral (
   select reviewer_neighborhood as badge_area, count(distinct reviewer_id) as distinct_reviewers
   from reviews where reviews.walker_id = w.id
   group by reviewer_neighborhood order by count(distinct reviewer_id) desc limit 1
-) best on true;
+) best on true
+left join lateral (
+  select count(*) as review_count, round(avg(rating)::numeric, 1) as avg_rating
+  from reviews where reviews.walker_id = w.id
+) overall on true;
 
 grant select on walker_trust_status to anon, authenticated;
 
