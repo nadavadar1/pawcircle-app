@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { ReviewForm } from "@/components/ReviewForm";
 
 type Booking = {
   id: string;
@@ -30,6 +31,7 @@ export default function MyBookingsPage() {
   const [walkerNames, setWalkerNames] = useState<Map<string, string>>(new Map());
   const [dogNames, setDogNames] = useState<Map<string, string>>(new Map());
   const [contactByBooking, setContactByBooking] = useState<Map<string, string>>(new Map());
+  const [reviewedBookingIds, setReviewedBookingIds] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -60,6 +62,12 @@ export default function MyBookingsPage() {
       const { data: dogs } = await supabase.from("dogs").select("id, name").in("id", dogIds);
       setDogNames(new Map((dogs ?? []).map((d) => [d.id, d.name])));
     }
+
+    const { data: myReviews } = await supabase
+      .from("reviews")
+      .select("booking_id")
+      .eq("reviewer_id", userData.user.id);
+    setReviewedBookingIds(new Set((myReviews ?? []).map((r) => r.booking_id).filter(Boolean)));
 
     setReady(true);
   }, [router]);
@@ -153,6 +161,18 @@ export default function MyBookingsPage() {
                   </p>
                 )}
               </div>
+
+              {b.status === "completed" && (
+                reviewedBookingIds.has(b.id) ? (
+                  <p className="mt-2 text-sm text-sage">תודה על הביקורת! ✓</p>
+                ) : (
+                  <ReviewForm
+                    walkerId={b.walker_id}
+                    bookingId={b.id}
+                    onSubmitted={() => setReviewedBookingIds((prev) => new Set(prev).add(b.id))}
+                  />
+                )
+              )}
             </li>
           ))}
         </ul>
