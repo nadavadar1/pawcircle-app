@@ -267,8 +267,16 @@ declare
   v_me uuid := auth.uid();
   v_booking record;
 begin
+  -- auth.uid() is null for an unauthenticated caller. NOT IN with a null
+  -- operand is null (neither true nor false) in SQL's three-valued logic,
+  -- which would silently skip the exception below and leak both phone
+  -- numbers to anyone who guesses a booking id. Reject null callers first.
+  if v_me is null then
+    raise exception 'not authorized';
+  end if;
+
   select * into v_booking from bookings where id = p_booking_id;
-  if v_booking is null or v_me not in (v_booking.owner_id, v_booking.walker_id) then
+  if v_booking is null or (v_me <> v_booking.owner_id and v_me <> v_booking.walker_id) then
     raise exception 'not authorized';
   end if;
   if v_booking.status not in ('accepted','completed') then
