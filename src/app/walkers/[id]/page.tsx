@@ -35,6 +35,16 @@ export default async function WalkerProfilePage({
     data: { user },
   } = await supabase.auth.getUser();
 
+  let viewerRole: string | null = null;
+  if (user && user.id !== walker.id) {
+    const { data: viewerProfile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    viewerRole = viewerProfile?.role ?? null;
+  }
+
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
       <Link href="/search" className="mb-6 inline-block text-sm text-rust hover:underline">
@@ -110,6 +120,8 @@ export default async function WalkerProfilePage({
                 לעריכה
               </Link>
             </p>
+          ) : user && viewerRole === "walker" ? (
+            <p className="text-sm text-ink/60">רק בעלי כלבים יכולים לבקש הליכה.</p>
           ) : user ? (
             <BookingRequestForm walkerId={walker.id} hourlyRate={walker.hourly_rate_ils} />
           ) : (
