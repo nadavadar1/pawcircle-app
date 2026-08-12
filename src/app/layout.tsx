@@ -21,6 +21,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://pawcircle-app.vercel.app"),
   title: "PawCircle",
   description: "מטיילים עם שם, לא רק כוכביות.",
 };
