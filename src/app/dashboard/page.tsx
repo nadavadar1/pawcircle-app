@@ -25,6 +25,12 @@ const STATUS_LABEL: Record<string, string> = {
   completed: "הושלם",
 };
 
+type TrustStatus = {
+  badge_area: string | null;
+  distinct_reviewers: number;
+  is_community_verified: boolean;
+};
+
 export default function DashboardPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
@@ -37,6 +43,7 @@ export default function DashboardPage() {
   const [errorByBooking, setErrorByBooking] = useState<Map<string, string>>(new Map());
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [trust, setTrust] = useState<TrustStatus | null>(null);
 
   const load = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
@@ -59,6 +66,13 @@ export default function DashboardPage() {
     }
     setIsWalker(true);
     setAvailableNow(walkerProfile.available_now);
+
+    const { data: trustData } = await supabase
+      .from("walker_trust_status")
+      .select("badge_area, distinct_reviewers, is_community_verified")
+      .eq("walker_id", userData.user.id)
+      .maybeSingle();
+    setTrust(trustData ?? { badge_area: null, distinct_reviewers: 0, is_community_verified: false });
 
     const { data: bookingsData } = await supabase
       .from("bookings")
@@ -161,6 +175,30 @@ export default function DashboardPage() {
         </label>
       </div>
       {availabilityError && <p className="mb-4 text-sm text-rust">{availabilityError}</p>}
+
+      {trust && (
+        <div className="mb-6 rounded-lg border border-line bg-paper-hi p-4">
+          {trust.is_community_verified ? (
+            <p className="text-sm font-bold text-pine">✓ מאומת/ת קהילתית · {trust.badge_area}</p>
+          ) : (
+            <>
+              <p className="mb-2 text-sm font-semibold text-ink">
+                {trust.distinct_reviewers === 0
+                  ? "עדיין אין ביקורות. 3 ביקורות מאותה שכונה מזכות בתג מאומת קהילתית ✓"
+                  : `עוד ${3 - trust.distinct_reviewers} ${3 - trust.distinct_reviewers === 1 ? "ביקורת" : "ביקורות"} מ${trust.badge_area} עד תג מאומת קהילתית ✓`}
+              </p>
+              <div className="flex gap-1.5">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className={`h-2 flex-1 rounded-full ${i < trust.distinct_reviewers ? "bg-brass" : "bg-line"}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {bookings.length === 0 ? (
         <p className="text-ink/70">עדיין אין בקשות הליכה.</p>

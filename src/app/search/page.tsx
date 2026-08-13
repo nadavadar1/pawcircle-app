@@ -108,6 +108,21 @@ export default async function SearchPage({
         </p>
       </div>
 
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {[
+          { step: "1", text: "מחפשים מטייל/ת לפי אזור, תקציב וגודל הכלב" },
+          { step: "2", text: "שולחים בקשת הליכה עם תאריך ושעה" },
+          { step: "3", text: "מקבלים אישור ופרטי קשר, ומתחילים" },
+        ].map((s) => (
+          <div key={s.step} className="flex items-start gap-3 rounded border border-line bg-paper-hi p-3">
+            <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-brass font-[var(--font-mono)] text-xs font-bold text-ink">
+              {s.step}
+            </span>
+            <p className="text-sm text-ink/80">{s.text}</p>
+          </div>
+        ))}
+      </div>
+
       <h2 className="mb-4 text-lg font-bold text-pine">חיפוש מטיילים</h2>
 
       <form method="get" className="mb-8 flex flex-col gap-4 rounded border border-line bg-paper-hi p-4">
@@ -187,6 +202,15 @@ export default async function SearchPage({
           ))}
         </ul>
       )}
+
+      <div className="mt-10 rounded-lg border border-line bg-paper-hi p-5">
+        <h2 className="mb-3 text-sm font-bold text-pine">טיפים לבעלי כלבים</h2>
+        <ul className="flex flex-col gap-2 text-sm text-ink/70">
+          <li>לפני ההליכה הראשונה, ספרו למטייל/ת על הרגלים או רגישויות מיוחדות של הכלב.</li>
+          <li>ודאו שהרצועה והקולר תקינים ושפרטי הקשר שלכם מעודכנים.</li>
+          <li>ביום חם, עדיפות להליכה בשעות הבוקר המוקדמות או הערב.</li>
+        </ul>
+      </div>
     </main>
   );
 }
