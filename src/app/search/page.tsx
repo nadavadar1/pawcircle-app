@@ -22,6 +22,7 @@ type WalkerRow = {
   hourly_rate_ils: number;
   service_areas: string[];
   specialties: string[];
+  available_now: boolean;
 };
 
 type ProfileRow = {
@@ -53,7 +54,7 @@ export default async function SearchPage({
 
   let query = supabase
     .from("walker_profiles")
-    .select("id, bio, hourly_rate_ils, service_areas, specialties")
+    .select("id, bio, hourly_rate_ils, service_areas, specialties, available_now")
     .eq("status", "approved");
 
   if (params.minPrice) query = query.gte("hourly_rate_ils", Number(params.minPrice));
@@ -85,6 +86,8 @@ export default async function SearchPage({
     }))
     .filter((r) => r.profile)
     .sort((a, b) => {
+      const availableDiff = Number(b.walker.available_now) - Number(a.walker.available_now);
+      if (availableDiff !== 0) return availableDiff;
       const verifiedDiff = Number(b.trust?.is_community_verified) - Number(a.trust?.is_community_verified);
       if (verifiedDiff !== 0) return verifiedDiff;
       return (b.trust?.avg_rating ?? 0) - (a.trust?.avg_rating ?? 0);
@@ -146,8 +149,14 @@ export default async function SearchPage({
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-[var(--font-display)] text-lg font-bold text-ink">
+                    <span className="flex items-center gap-1.5 font-[var(--font-display)] text-lg font-bold text-ink">
                       {profile!.full_name}
+                      {walker.available_now && (
+                        <span
+                          title="זמין/ה עכשיו"
+                          className="h-2 w-2 flex-shrink-0 rounded-full bg-sage"
+                        />
+                      )}
                     </span>
                     <span className="font-[var(--font-mono)] text-sm text-pine">
                       {walker.hourly_rate_ils} ₪/שעה
@@ -155,6 +164,9 @@ export default async function SearchPage({
                   </div>
                   <div className="flex items-center gap-2">
                     <p className="text-sm text-ink/70">{profile!.city}</p>
+                    {walker.available_now && (
+                      <p className="text-xs font-semibold text-sage">זמין/ה עכשיו</p>
+                    )}
                     {trust && trust.review_count > 0 && (
                       <p className="text-sm font-bold text-brass-hi">
                         ★ {trust.avg_rating} ({trust.review_count})
