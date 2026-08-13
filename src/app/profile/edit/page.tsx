@@ -41,6 +41,7 @@ export default function ProfileEditPage() {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   const [bio, setBio] = useState("");
   const [rate, setRate] = useState(50);
@@ -51,7 +52,9 @@ export default function ProfileEditPage() {
   const [availableNow, setAvailableNow] = useState(true);
   const [savingWalker, setSavingWalker] = useState(false);
   const [walkerSaved, setWalkerSaved] = useState(false);
+  const [walkerError, setWalkerError] = useState<string | null>(null);
   const [upgrading, setUpgrading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
@@ -111,12 +114,17 @@ export default function ProfileEditPage() {
     if (!profile) return;
     setSavingProfile(true);
     setProfileSaved(false);
+    setProfileError(null);
     const supabase = getSupabaseBrowserClient();
-    await supabase
+    const { error } = await supabase
       .from("profiles")
       .update({ full_name: fullName, phone, city, photo_url: photoUrl })
       .eq("id", profile.id);
     setSavingProfile(false);
+    if (error) {
+      setProfileError("השמירה נכשלה, נסה שוב.");
+      return;
+    }
     setProfileSaved(true);
   }
 
@@ -125,8 +133,9 @@ export default function ProfileEditPage() {
     if (!profile) return;
     setSavingWalker(true);
     setWalkerSaved(false);
+    setWalkerError(null);
     const supabase = getSupabaseBrowserClient();
-    await supabase
+    const { error } = await supabase
       .from("walker_profiles")
       .update({
         bio: bio || null,
@@ -139,29 +148,39 @@ export default function ProfileEditPage() {
       })
       .eq("id", profile.id);
     setSavingWalker(false);
+    if (error) {
+      setWalkerError("השמירה נכשלה, נסה שוב.");
+      return;
+    }
     setWalkerSaved(true);
   }
 
   async function addOwnerRole() {
     if (!profile) return;
     setUpgrading(true);
+    setUpgradeError(null);
     const supabase = getSupabaseBrowserClient();
     const { error } = await supabase.from("profiles").update({ role: "both" }).eq("id", profile.id);
     setUpgrading(false);
-    if (error) return;
+    if (error) {
+      setUpgradeError("הוספת ההרשאה נכשלה, נסה שוב.");
+      return;
+    }
     setProfile({ ...profile, role: "both" });
   }
 
   async function addWalkerRole() {
     if (!profile) return;
     setUpgrading(true);
+    setUpgradeError(null);
     const supabase = getSupabaseBrowserClient();
     const { error: roleError } = await supabase.from("profiles").update({ role: "both" }).eq("id", profile.id);
     if (roleError) {
       setUpgrading(false);
+      setUpgradeError("ההרשמה נכשלה, נסה שוב.");
       return;
     }
-    const { data: w, error: walkerError } = await supabase
+    const { data: w, error: walkerInsertError } = await supabase
       .from("walker_profiles")
       .insert({
         id: profile.id,
@@ -173,7 +192,10 @@ export default function ProfileEditPage() {
       .select("bio, hourly_rate_ils, service_areas, dog_size_compatibility, specialties, years_experience, available_now")
       .single();
     setUpgrading(false);
-    if (walkerError || !w) return;
+    if (walkerInsertError || !w) {
+      setUpgradeError("ההרשמה נכשלה, נסה שוב.");
+      return;
+    }
     setProfile({ ...profile, role: "both" });
     setWalker(w);
     setRate(w.hourly_rate_ils);
@@ -212,31 +234,38 @@ export default function ProfileEditPage() {
           {savingProfile ? "שומר..." : "שמירה"}
         </button>
         {profileSaved && <p className="text-xs text-sage">נשמר ✓</p>}
+        {profileError && <p className="text-xs text-rust">{profileError}</p>}
       </form>
 
       {profile.role === "walker" && (
-        <div className="mb-8 flex items-center justify-between gap-3 rounded border border-line bg-paper-hi p-4">
-          <p className="text-sm text-ink/80">יש לך גם כלב? אפשר להוסיף כלבים ולבקש הליכות.</p>
-          <button
-            onClick={addOwnerRole}
-            disabled={upgrading}
-            className="flex-shrink-0 rounded bg-brass px-3 py-1.5 text-sm font-bold text-ink disabled:opacity-60"
-          >
-            {upgrading ? "מוסיף..." : "הוספת כלבים לחשבון"}
-          </button>
+        <div className="mb-8 rounded border border-line bg-paper-hi p-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-ink/80">יש לך גם כלב? אפשר להוסיף כלבים ולבקש הליכות.</p>
+            <button
+              onClick={addOwnerRole}
+              disabled={upgrading}
+              className="flex-shrink-0 rounded bg-brass px-3 py-1.5 text-sm font-bold text-ink disabled:opacity-60"
+            >
+              {upgrading ? "מוסיף..." : "הוספת כלבים לחשבון"}
+            </button>
+          </div>
+          {upgradeError && <p className="mt-2 text-xs text-rust">{upgradeError}</p>}
         </div>
       )}
 
       {profile.role === "owner" && (
-        <div className="mb-8 flex items-center justify-between gap-3 rounded border border-line bg-paper-hi p-4">
-          <p className="text-sm text-ink/80">רוצה גם לטייל כלבים ולהרוויח? אפשר להירשם גם כמטייל/ת.</p>
-          <button
-            onClick={addWalkerRole}
-            disabled={upgrading}
-            className="flex-shrink-0 rounded bg-brass px-3 py-1.5 text-sm font-bold text-ink disabled:opacity-60"
-          >
-            {upgrading ? "מוסיף..." : "הרשמה כמטייל/ת"}
-          </button>
+        <div className="mb-8 rounded border border-line bg-paper-hi p-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-ink/80">רוצה גם לטייל כלבים ולהרוויח? אפשר להירשם גם כמטייל/ת.</p>
+            <button
+              onClick={addWalkerRole}
+              disabled={upgrading}
+              className="flex-shrink-0 rounded bg-brass px-3 py-1.5 text-sm font-bold text-ink disabled:opacity-60"
+            >
+              {upgrading ? "מוסיף..." : "הרשמה כמטייל/ת"}
+            </button>
+          </div>
+          {upgradeError && <p className="mt-2 text-xs text-rust">{upgradeError}</p>}
         </div>
       )}
 
@@ -266,6 +295,7 @@ export default function ProfileEditPage() {
             {savingWalker ? "שומר..." : "שמירה"}
           </button>
           {walkerSaved && <p className="text-xs text-sage">נשמר ✓</p>}
+          {walkerError && <p className="text-xs text-rust">{walkerError}</p>}
         </form>
       )}
 
