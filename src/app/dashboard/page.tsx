@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { Loading } from "@/components/Loading";
+import { BookingStatusBadge, statusBorderClass } from "@/components/BookingStatusBadge";
 
 type Booking = {
   id: string;
@@ -166,12 +167,12 @@ export default function DashboardPage() {
       ) : (
         <ul className="flex flex-col gap-3">
           {bookings.map((b) => (
-            <li key={b.id} className="rounded border border-line bg-paper-hi p-4">
-              <div className="mb-1 flex items-center justify-between">
+            <li className={`rounded border-r-4 border-y border-l border-line bg-paper-hi p-4 ${statusBorderClass(b.status)}`} key={b.id}>
+              <div className="mb-1 flex items-center justify-between gap-2">
                 <span className="font-semibold text-ink">
                   {ownerNames.get(b.owner_id) ?? "בעל/ת כלב"} · {dogNames.get(b.dog_id) ?? "כלב"}
                 </span>
-                <span className="text-sm font-bold text-pine">{STATUS_LABEL[b.status] ?? b.status}</span>
+                <BookingStatusBadge status={b.status} label={STATUS_LABEL[b.status] ?? b.status} />
               </div>
               <p className="text-sm text-ink/70">
                 {new Date(b.requested_time).toLocaleString("he-IL")} · {b.duration_minutes} דקות
