@@ -51,6 +51,7 @@ export default function ProfileEditPage() {
   const [availableNow, setAvailableNow] = useState(true);
   const [savingWalker, setSavingWalker] = useState(false);
   const [walkerSaved, setWalkerSaved] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
 
   const load = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
@@ -141,6 +142,47 @@ export default function ProfileEditPage() {
     setWalkerSaved(true);
   }
 
+  async function addOwnerRole() {
+    if (!profile) return;
+    setUpgrading(true);
+    const supabase = getSupabaseBrowserClient();
+    const { error } = await supabase.from("profiles").update({ role: "both" }).eq("id", profile.id);
+    setUpgrading(false);
+    if (error) return;
+    setProfile({ ...profile, role: "both" });
+  }
+
+  async function addWalkerRole() {
+    if (!profile) return;
+    setUpgrading(true);
+    const supabase = getSupabaseBrowserClient();
+    const { error: roleError } = await supabase.from("profiles").update({ role: "both" }).eq("id", profile.id);
+    if (roleError) {
+      setUpgrading(false);
+      return;
+    }
+    const { data: w, error: walkerError } = await supabase
+      .from("walker_profiles")
+      .insert({
+        id: profile.id,
+        hourly_rate_ils: 50,
+        service_areas: [],
+        dog_size_compatibility: [...DOG_SIZES],
+        specialties: [],
+      })
+      .select("bio, hourly_rate_ils, service_areas, dog_size_compatibility, specialties, years_experience, available_now")
+      .single();
+    setUpgrading(false);
+    if (walkerError || !w) return;
+    setProfile({ ...profile, role: "both" });
+    setWalker(w);
+    setRate(w.hourly_rate_ils);
+    setServiceAreas(w.service_areas);
+    setDogSizes(w.dog_size_compatibility);
+    setSpecialties(w.specialties);
+    setAvailableNow(w.available_now);
+  }
+
   if (!ready || !profile) return <Loading />;
 
   return (
@@ -171,6 +213,32 @@ export default function ProfileEditPage() {
         </button>
         {profileSaved && <p className="text-xs text-sage">נשמר ✓</p>}
       </form>
+
+      {profile.role === "walker" && (
+        <div className="mb-8 flex items-center justify-between gap-3 rounded border border-line bg-paper-hi p-4">
+          <p className="text-sm text-ink/80">יש לך גם כלב? אפשר להוסיף כלבים ולבקש הליכות.</p>
+          <button
+            onClick={addOwnerRole}
+            disabled={upgrading}
+            className="flex-shrink-0 rounded bg-brass px-3 py-1.5 text-sm font-bold text-ink disabled:opacity-60"
+          >
+            {upgrading ? "מוסיף..." : "הוספת כלבים לחשבון"}
+          </button>
+        </div>
+      )}
+
+      {profile.role === "owner" && (
+        <div className="mb-8 flex items-center justify-between gap-3 rounded border border-line bg-paper-hi p-4">
+          <p className="text-sm text-ink/80">רוצה גם לטייל כלבים ולהרוויח? אפשר להירשם גם כמטייל/ת.</p>
+          <button
+            onClick={addWalkerRole}
+            disabled={upgrading}
+            className="flex-shrink-0 rounded bg-brass px-3 py-1.5 text-sm font-bold text-ink disabled:opacity-60"
+          >
+            {upgrading ? "מוסיף..." : "הרשמה כמטייל/ת"}
+          </button>
+        </div>
+      )}
 
       {walker && (
         <form onSubmit={saveWalker} className="mb-8 flex flex-col gap-3 rounded border border-line bg-paper-hi p-4">
