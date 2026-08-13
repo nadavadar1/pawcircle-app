@@ -7,6 +7,10 @@ import { Loading } from "@/components/Loading";
 import { BookingStatusBadge, statusBorderClass } from "@/components/BookingStatusBadge";
 import { WalkPhotoUpload } from "@/components/WalkPhotoUpload";
 
+// Flip to true once the walk_photo_url / set_walk_photo / walk-photos
+// migration has been run against the live database.
+const WALK_PHOTO_FEATURE_ENABLED = false;
+
 type Booking = {
   id: string;
   owner_id: string;
@@ -258,7 +262,7 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {(b.status === "accepted" || b.status === "completed") && (
+              {WALK_PHOTO_FEATURE_ENABLED && (b.status === "accepted" || b.status === "completed") && (
                 <WalkPhotoUpload
                   bookingId={b.id}
                   currentUrl={b.walk_photo_url}
