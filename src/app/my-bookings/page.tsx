@@ -16,6 +16,7 @@ type Booking = {
   status: string;
   price_ils: number | null;
   owner_message: string | null;
+  walk_photo_url: string | null;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -150,6 +151,11 @@ export default function MyBookingsPage() {
                 {b.price_ils ? ` · ${b.price_ils} ₪` : ""}
               </p>
               {b.owner_message && <p className="mt-1 text-sm text-ink/60">&rdquo;{b.owner_message}&rdquo;</p>}
+
+              {b.walk_photo_url && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={b.walk_photo_url} alt="" className="mt-2 h-40 w-full rounded object-cover" />
+              )}
 
               <div className="mt-2 flex flex-wrap gap-2">
                 {b.status === "requested" && (

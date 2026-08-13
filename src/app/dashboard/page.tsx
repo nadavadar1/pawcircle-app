@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { Loading } from "@/components/Loading";
 import { BookingStatusBadge, statusBorderClass } from "@/components/BookingStatusBadge";
+import { WalkPhotoUpload } from "@/components/WalkPhotoUpload";
 
 type Booking = {
   id: string;
@@ -15,6 +16,7 @@ type Booking = {
   status: string;
   price_ils: number | null;
   owner_message: string | null;
+  walk_photo_url: string | null;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -255,6 +257,16 @@ export default function DashboardPage() {
                   <p className="w-full text-sm text-rust">{errorByBooking.get(b.id)}</p>
                 )}
               </div>
+
+              {(b.status === "accepted" || b.status === "completed") && (
+                <WalkPhotoUpload
+                  bookingId={b.id}
+                  currentUrl={b.walk_photo_url}
+                  onUploaded={(url) =>
+                    setBookings((prev) => prev.map((x) => (x.id === b.id ? { ...x, walk_photo_url: url } : x)))
+                  }
+                />
+              )}
             </li>
           ))}
         </ul>
