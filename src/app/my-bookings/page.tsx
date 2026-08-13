@@ -33,6 +33,7 @@ export default function MyBookingsPage() {
   const [dogNames, setDogNames] = useState<Map<string, string>>(new Map());
   const [contactByBooking, setContactByBooking] = useState<Map<string, string>>(new Map());
   const [reviewedBookingIds, setReviewedBookingIds] = useState<Set<string>>(new Set());
+  const [errorByBooking, setErrorByBooking] = useState<Map<string, string>>(new Map());
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -77,31 +78,52 @@ export default function MyBookingsPage() {
     load();
   }, [load]);
 
+  function clearBookingError(id: string) {
+    setErrorByBooking((prev) => {
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+  }
+
   async function cancelBooking(id: string) {
     setBusyId(id);
+    clearBookingError(id);
     const supabase = getSupabaseBrowserClient();
-    await supabase.rpc("set_booking_status", { p_booking_id: id, p_new_status: "cancelled" });
+    const { error } = await supabase.rpc("set_booking_status", { p_booking_id: id, p_new_status: "cancelled" });
     setBusyId(null);
+    if (error) {
+      setErrorByBooking((prev) => new Map(prev).set(id, "הביטול נכשל, נסה שוב."));
+      return;
+    }
     load();
   }
 
   async function markCompleted(id: string) {
     setBusyId(id);
+    clearBookingError(id);
     const supabase = getSupabaseBrowserClient();
-    await supabase.rpc("set_booking_status", { p_booking_id: id, p_new_status: "completed" });
+    const { error } = await supabase.rpc("set_booking_status", { p_booking_id: id, p_new_status: "completed" });
     setBusyId(null);
+    if (error) {
+      setErrorByBooking((prev) => new Map(prev).set(id, "הפעולה נכשלה, נסה שוב."));
+      return;
+    }
     load();
   }
 
   async function showContact(id: string) {
     setBusyId(id);
+    clearBookingError(id);
     const supabase = getSupabaseBrowserClient();
-    const { data } = await supabase.rpc("get_contact_info", { p_booking_id: id });
+    const { data, error } = await supabase.rpc("get_contact_info", { p_booking_id: id });
     const row = (data as { owner_phone: string; walker_phone: string }[] | null)?.[0];
     setBusyId(null);
-    if (row) {
-      setContactByBooking((prev) => new Map(prev).set(id, row.walker_phone));
+    if (error || !row) {
+      setErrorByBooking((prev) => new Map(prev).set(id, "לא הצלחנו להציג את פרטי הקשר, נסה שוב."));
+      return;
     }
+    setContactByBooking((prev) => new Map(prev).set(id, row.walker_phone));
   }
 
   if (!ready) return <Loading />;
@@ -160,6 +182,9 @@ export default function MyBookingsPage() {
                   <p className="w-full text-sm font-[var(--font-mono)] text-pine" dir="ltr">
                     {contactByBooking.get(b.id)}
                   </p>
+                )}
+                {errorByBooking.has(b.id) && (
+                  <p className="w-full text-sm text-rust">{errorByBooking.get(b.id)}</p>
                 )}
               </div>
 
