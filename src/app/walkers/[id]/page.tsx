@@ -1,7 +1,39 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { BookingRequestForm } from "@/components/BookingRequestForm";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await getSupabaseServerClient();
+
+  const [{ data: walker }, { data: profile }, { data: trust }] = await Promise.all([
+    supabase.from("walker_profiles").select("hourly_rate_ils, status").eq("id", id).maybeSingle(),
+    supabase.from("profiles").select("full_name, city").eq("id", id).maybeSingle(),
+    supabase.from("walker_trust_status").select("is_community_verified, badge_area").eq("walker_id", id).maybeSingle(),
+  ]);
+
+  if (!walker || !profile || walker.status !== "approved") {
+    return { title: "מטייל/ת לא נמצא/ה | PawCircle" };
+  }
+
+  const title = `${profile.full_name} · מטייל/ת ב${profile.city} | PawCircle`;
+  const description = trust?.is_community_verified
+    ? `${walker.hourly_rate_ils} ₪/שעה · מאומת/ת קהילתית ב${trust.badge_area} · הזמנת הליכה עם מטייל/ת עם שם אמיתי, לא רק כוכביות.`
+    : `${walker.hourly_rate_ils} ₪/שעה · הזמנת הליכה עם מטייל/ת עם שם אמיתי, לא רק כוכביות.`;
+
+  return {
+    title,
+    description,
+    openGraph: { title, description },
+    twitter: { title, description },
+  };
+}
 
 export default async function WalkerProfilePage({
   params,
