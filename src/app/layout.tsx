@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Frank_Ruhl_Libre, Assistant, IBM_Plex_Mono } from "next/font/google";
 import { Header } from "@/components/Header";
 import "./globals.css";
@@ -43,6 +44,11 @@ export default function RootLayout({
       className={`${frankRuhl.variable} ${assistant.variable} ${ibmPlexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)] font-[var(--font-body)]">
+        <Script
+          data-goatcounter="https://nadav.goatcounter.com/count"
+          src="https://gc.zgo.at/count.js"
+          strategy="afterInteractive"
+        />
         <Header />
         <div className="flex flex-1 flex-col">{children}</div>
       </body>

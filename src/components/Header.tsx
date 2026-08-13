@@ -1,14 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+
+declare global {
+  interface Window {
+    goatcounter?: { count: (opts: { path: string; title?: string }) => void };
+  }
+}
 
 export function Header() {
   const [email, setEmail] = useState<string | null | undefined>(undefined);
   const [pendingCount, setPendingCount] = useState(0);
   const pathname = usePathname();
+  const isFirstPageview = useRef(true);
+
+  // GoatCounter's script only auto-counts the very first (full) page load;
+  // client-side route changes need an explicit count() call to be tracked.
+  useEffect(() => {
+    if (isFirstPageview.current) {
+      isFirstPageview.current = false;
+      return;
+    }
+    window.goatcounter?.count({ path: pathname, title: document.title });
+  }, [pathname]);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
