@@ -92,7 +92,20 @@ export default async function SearchPage({
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
-      <h1 className="mb-6 text-2xl font-bold text-pine">חיפוש מטיילים</h1>
+      <div className="mb-8 rounded-lg bg-pine px-6 py-8 text-center text-paper-hi">
+        <p className="font-[var(--font-mono)] text-xs tracking-wide text-brass-hi" dir="ltr">
+          PAWCIRCLE
+        </p>
+        <h1 className="mt-2 font-[var(--font-display)] text-2xl font-black sm:text-3xl">
+          מטיילים עם שם. <span className="text-brass-hi">לא רק כוכביות.</span>
+        </h1>
+        <p className="mx-auto mt-3 max-w-md text-sm text-paper-hi/80">
+          כל מטייל ב-PawCircle מאומת בשם אמיתי וביקורות מהקהילה — לא עוד רשימה אנונימית.
+          מ-3 ביקורות משכונה אחת מקבלים תג &quot;מאומת קהילתית&quot;.
+        </p>
+      </div>
+
+      <h2 className="mb-4 text-lg font-bold text-pine">חיפוש מטיילים</h2>
 
       <form method="get" className="mb-8 flex flex-col gap-4 rounded border border-line bg-paper-hi p-4">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
