@@ -19,10 +19,12 @@ export function DogEditor({
   ownerId,
   dog,
   onSaved,
+  onDeleted,
 }: {
   ownerId: string;
   dog: Dog | null;
   onSaved: (dog: Dog) => void;
+  onDeleted?: (id: string) => void;
 }) {
   const [name, setName] = useState(dog?.name ?? "");
   const [breed, setBreed] = useState(dog?.breed ?? "");
@@ -31,6 +33,7 @@ export function DogEditor({
   const [notes, setNotes] = useState(dog?.special_notes ?? "");
   const [photoUrl, setPhotoUrl] = useState<string | null>(dog?.photo_url ?? null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent) {
@@ -60,6 +63,37 @@ export function DogEditor({
       return;
     }
     onSaved(data as Dog);
+  }
+
+  async function handleDelete() {
+    if (!dog) return;
+    setDeleting(true);
+    setError(null);
+
+    const supabase = getSupabaseBrowserClient();
+    const { count } = await supabase
+      .from("bookings")
+      .select("id", { count: "exact", head: true })
+      .eq("dog_id", dog.id);
+
+    if (count && count > 0) {
+      setDeleting(false);
+      setError("אי אפשר למחוק כלב עם היסטוריית הזמנות.");
+      return;
+    }
+
+    if (!window.confirm(`למחוק את ${dog.name}? הפעולה לא הפיכה.`)) {
+      setDeleting(false);
+      return;
+    }
+
+    const { error: deleteError } = await supabase.from("dogs").delete().eq("id", dog.id);
+    setDeleting(false);
+    if (deleteError) {
+      setError("המחיקה נכשלה, נסה שוב.");
+      return;
+    }
+    onDeleted?.(dog.id);
   }
 
   return (
@@ -111,13 +145,25 @@ export function DogEditor({
         rows={2}
         className="rounded border border-line bg-paper-hi px-2 py-1.5 text-sm"
       />
-      <button
-        type="submit"
-        disabled={saving}
-        className="self-start rounded bg-brass px-3 py-1.5 text-sm font-bold text-ink disabled:opacity-60"
-      >
-        {saving ? "שומר..." : dog ? "שמירת שינויים" : "הוספת כלב"}
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          type="submit"
+          disabled={saving || deleting}
+          className="self-start rounded bg-brass px-3 py-1.5 text-sm font-bold text-ink disabled:opacity-60"
+        >
+          {saving ? "שומר..." : dog ? "שמירת שינויים" : "הוספת כלב"}
+        </button>
+        {dog && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={saving || deleting}
+            className="self-start rounded border border-rust px-3 py-1.5 text-sm text-rust disabled:opacity-60"
+          >
+            {deleting ? "מוחק..." : "מחיקת כלב"}
+          </button>
+        )}
+      </div>
       {error && <p className="text-xs text-rust">{error}</p>}
     </form>
   );

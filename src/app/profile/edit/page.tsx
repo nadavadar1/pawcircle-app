@@ -308,6 +308,7 @@ export default function ProfileEditPage() {
               ownerId={profile.id}
               dog={d}
               onSaved={(updated) => setDogs((prev) => prev.map((x) => (x.id === updated.id ? updated : x)))}
+              onDeleted={(id) => setDogs((prev) => prev.filter((x) => x.id !== id))}
             />
           ))}
           <DogEditor

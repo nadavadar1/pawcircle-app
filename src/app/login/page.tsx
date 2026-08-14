@@ -31,11 +31,16 @@ export default function LoginPage() {
 
   async function signInWithGoogle() {
     const supabase = getSupabaseBrowserClient();
-    await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-    // Browser navigates away to Google; nothing more to do here.
+    // On success the browser navigates away to Google before this resolves.
+    // If it resolves with an error, we're still here and need to say so.
+    if (error) {
+      setStatus("error");
+      setErrorMsg(error.message);
+    }
   }
 
   async function verifyCode(e: FormEvent) {
