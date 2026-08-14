@@ -18,9 +18,18 @@ export function WalkPhotoUpload({
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploading(true);
     setError(null);
 
+    if (!file.type.startsWith("image/")) {
+      setError("אפשר להעלות תמונה בלבד.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("התמונה גדולה מדי (מקסימום 5MB).");
+      return;
+    }
+
+    setUploading(true);
     const supabase = getSupabaseBrowserClient();
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) {
