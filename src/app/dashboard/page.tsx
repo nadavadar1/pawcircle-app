@@ -9,7 +9,7 @@ import { WalkPhotoUpload } from "@/components/WalkPhotoUpload";
 
 // Flip to true once the walk_photo_url / set_walk_photo / walk-photos
 // migration has been run against the live database.
-const WALK_PHOTO_FEATURE_ENABLED = false;
+const WALK_PHOTO_FEATURE_ENABLED = true;
 
 type Booking = {
   id: string;
