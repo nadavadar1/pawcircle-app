@@ -103,32 +103,39 @@ export default function OnboardingPage() {
 
   return (
     <main className="mx-auto max-w-lg px-6 py-12">
-      <h1 className="mb-1 text-2xl font-bold text-pine">כמה פרטים ומתחילים</h1>
-      <p className="mb-6 text-sm text-ink/70">
-        זה לוקח דקה. תוכלו לערוך הכל אחר כך.
-      </p>
+      <div className="mb-6 rounded-lg bg-pine px-6 py-6 text-center text-paper-hi">
+        <p className="font-[var(--font-mono)] text-xs tracking-wide text-brass-hi" dir="ltr">
+          PAWCIRCLE
+        </p>
+        <h1 className="mt-1 font-[var(--font-display)] text-xl font-black">כמה פרטים ומתחילים</h1>
+        <p className="mt-1 text-sm text-paper-hi/80">זה לוקח דקה. תוכלו לערוך הכל אחר כך.</p>
+      </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        <fieldset className="flex gap-4">
-          <legend className="mb-2 text-sm font-semibold">אני...</legend>
-          {(
-            [
-              ["owner", "בעל/ת כלב"],
-              ["walker", "רוצה לטייל"],
-              ["both", "שניהם"],
-            ] as const
-          ).map(([value, label]) => (
-            <label key={value} className="flex items-center gap-1.5 text-sm">
-              <input
-                type="radio"
-                name="role"
-                value={value}
-                checked={role === value}
-                onChange={() => setRole(value)}
-              />
-              {label}
-            </label>
-          ))}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5 rounded-lg border border-line bg-paper-hi p-6">
+        <fieldset>
+          <legend className="mb-2 text-sm font-semibold text-pine">אני...</legend>
+          <div className="grid grid-cols-3 gap-2">
+            {(
+              [
+                ["owner", "בעל/ת כלב"],
+                ["walker", "רוצה לטייל"],
+                ["both", "שניהם"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setRole(value)}
+                className={`rounded border px-2 py-2.5 text-sm font-semibold transition-colors ${
+                  role === value
+                    ? "border-brass bg-brass text-ink"
+                    : "border-line bg-paper text-ink/70 hover:border-rust"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </fieldset>
 
         {photoUrl && (
