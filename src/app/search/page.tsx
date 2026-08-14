@@ -5,7 +5,7 @@ import { ChipMultiSelect } from "@/components/ChipMultiSelect";
 
 // Flip to true once the favorites table migration has been run against
 // the live database.
-const FAVORITES_FEATURE_ENABLED = false;
+const FAVORITES_FEATURE_ENABLED = true;
 
 type SearchParams = {
   minPrice?: string;

@@ -7,7 +7,7 @@ import { FavoriteButton } from "@/components/FavoriteButton";
 
 // Flip to true once the favorites table migration has been run against
 // the live database.
-const FAVORITES_FEATURE_ENABLED = false;
+const FAVORITES_FEATURE_ENABLED = true;
 
 const AVATAR_COLORS = ["bg-pine", "bg-rust", "bg-brass", "bg-sage"];
 
