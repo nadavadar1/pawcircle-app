@@ -3,6 +3,10 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { CITIES, SPECIALTIES, DOG_SIZES } from "@/lib/constants";
 import { ChipMultiSelect } from "@/components/ChipMultiSelect";
 
+// Flip to true once the favorites table migration has been run against
+// the live database.
+const FAVORITES_FEATURE_ENABLED = false;
+
 type SearchParams = {
   minPrice?: string;
   maxPrice?: string;
@@ -68,6 +72,7 @@ export default async function SearchPage({
 
   let profilesById = new Map<string, ProfileRow>();
   let trustById = new Map<string, TrustRow>();
+  let favoriteIds = new Set<string>();
 
   if (ids.length > 0) {
     const [{ data: profiles }, { data: trust }] = await Promise.all([
@@ -78,14 +83,30 @@ export default async function SearchPage({
     trustById = new Map((trust ?? []).map((t) => [t.walker_id, t]));
   }
 
+  if (FAVORITES_FEATURE_ENABLED) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      const { data: favorites } = await supabase
+        .from("favorites")
+        .select("walker_id")
+        .eq("owner_id", user.id);
+      favoriteIds = new Set((favorites ?? []).map((f) => f.walker_id));
+    }
+  }
+
   const results = (walkers ?? [])
     .map((w) => ({
       walker: w,
       profile: profilesById.get(w.id),
       trust: trustById.get(w.id),
+      isFavorite: favoriteIds.has(w.id),
     }))
     .filter((r) => r.profile)
     .sort((a, b) => {
+      const favoriteDiff = Number(b.isFavorite) - Number(a.isFavorite);
+      if (favoriteDiff !== 0) return favoriteDiff;
       const availableDiff = Number(b.walker.available_now) - Number(a.walker.available_now);
       if (availableDiff !== 0) return availableDiff;
       const verifiedDiff = Number(b.trust?.is_community_verified) - Number(a.trust?.is_community_verified);
@@ -150,12 +171,15 @@ export default async function SearchPage({
         <p className="text-ink/70">אין עדיין מטיילים שתואמים את החיפוש. נסו להרחיב את הסינון.</p>
       ) : (
         <ul className="flex flex-col gap-3">
-          {results.map(({ walker, profile, trust }) => (
+          {results.map(({ walker, profile, trust, isFavorite }) => (
             <li key={walker.id}>
               <Link
                 href={`/walkers/${walker.id}`}
                 className="flex items-center gap-3 rounded border border-line bg-paper-hi p-4 hover:border-rust"
               >
+                {isFavorite && (
+                  <span title="במועדפים שלך" className="text-rust" aria-hidden="true">♥</span>
+                )}
                 {profile!.photo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={profile!.photo_url} alt="" className="h-12 w-12 flex-shrink-0 rounded-full object-cover" />

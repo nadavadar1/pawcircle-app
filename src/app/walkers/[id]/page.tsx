@@ -3,6 +3,11 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { BookingRequestForm } from "@/components/BookingRequestForm";
+import { FavoriteButton } from "@/components/FavoriteButton";
+
+// Flip to true once the favorites table migration has been run against
+// the live database.
+const FAVORITES_FEATURE_ENABLED = false;
 
 const AVATAR_COLORS = ["bg-pine", "bg-rust", "bg-brass", "bg-sage"];
 
@@ -172,6 +177,12 @@ export default async function WalkerProfilePage({
               </div>
             )}
           </dl>
+
+        {FAVORITES_FEATURE_ENABLED && user && user.id !== walker.id && (
+          <div className="mt-4">
+            <FavoriteButton walkerId={walker.id} />
+          </div>
+        )}
 
         <div className="mt-5">
           {user?.id === walker.id ? (

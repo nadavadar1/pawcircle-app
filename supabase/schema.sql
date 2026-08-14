@@ -92,6 +92,16 @@ create table reviews (
 create index on reviews (walker_id);
 create index on reviews (reviewer_neighborhood);
 
+-- An owner's saved/bookmarked walkers — browsing interest, not a booking.
+create table favorites (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references profiles(id) on delete cascade,
+  walker_id uuid not null references profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (owner_id, walker_id)
+);
+create index on favorites (owner_id);
+
 -- Live "מאומת קהילתית" (community-verified) badge: a walker qualifies once
 -- any single declared neighborhood has 3+ reviews from 3 distinct reviewers.
 -- Also carries the overall average rating + review count (Uber-style score,
@@ -127,6 +137,7 @@ alter table dogs enable row level security;
 alter table walker_profiles enable row level security;
 alter table bookings enable row level security;
 alter table reviews enable row level security;
+alter table favorites enable row level security;
 
 -- profiles: readable by anyone (needed for public walker browsing), but the
 -- `phone` column is never directly selectable — see column grants below.
@@ -154,6 +165,10 @@ create policy "read own dogs or dogs on your bookings" on dogs
   );
 
 create policy "manage own dogs" on dogs
+  for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+
+-- favorites: private to the owner who saved them.
+create policy "manage own favorites" on favorites
   for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
 
 -- walker_profiles: approved walkers are publicly visible; a walker always
