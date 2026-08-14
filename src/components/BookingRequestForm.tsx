@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { DOG_SIZES } from "@/lib/constants";
 
@@ -13,6 +14,9 @@ export function BookingRequestForm({
   walkerId: string;
   hourlyRate: number;
 }) {
+  const searchParams = useSearchParams();
+  const rebookDogId = searchParams.get("dog");
+
   const [userId, setUserId] = useState<string | null>(null);
   const [dogs, setDogs] = useState<Dog[] | null>(null);
 
@@ -25,9 +29,12 @@ export function BookingRequestForm({
   const [time, setTime] = useState("");
   const [duration, setDuration] = useState(30);
   const [message, setMessage] = useState("");
+  const [recurring, setRecurring] = useState(false);
+  const [weeks, setWeeks] = useState(4);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [sentCount, setSentCount] = useState(1);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -39,9 +46,12 @@ export function BookingRequestForm({
         .select("id, name, size")
         .eq("owner_id", data.user.id);
       setDogs(dogsData ?? []);
-      if (dogsData && dogsData.length > 0) setDogId(dogsData[0].id);
+      if (dogsData && dogsData.length > 0) {
+        const preselect = rebookDogId && dogsData.some((d) => d.id === rebookDogId) ? rebookDogId : dogsData[0].id;
+        setDogId(preselect);
+      }
     });
-  }, []);
+  }, [rebookDogId]);
 
   async function handleAddDog(e: FormEvent) {
     e.preventDefault();
@@ -69,21 +79,33 @@ export function BookingRequestForm({
     setError(null);
 
     const supabase = getSupabaseBrowserClient();
-    const requestedTime = new Date(`${date}T${time}`).toISOString();
+    const baseTime = new Date(`${date}T${time}`);
+    const occurrences = recurring ? weeks : 1;
 
-    const { error: rpcError } = await supabase.rpc("create_booking_request", {
-      p_walker_id: walkerId,
-      p_dog_id: dogId,
-      p_requested_time: requestedTime,
-      p_duration_minutes: duration,
-      p_owner_message: message || null,
-    });
+    let succeeded = 0;
+    for (let i = 0; i < occurrences; i++) {
+      const requestedTime = new Date(baseTime.getTime() + i * 7 * 24 * 60 * 60 * 1000).toISOString();
+      const { error: rpcError } = await supabase.rpc("create_booking_request", {
+        p_walker_id: walkerId,
+        p_dog_id: dogId,
+        p_requested_time: requestedTime,
+        p_duration_minutes: duration,
+        p_owner_message: message || null,
+      });
+      if (rpcError) {
+        setSubmitting(false);
+        if (succeeded > 0) {
+          setError(`נשלחו ${succeeded} מתוך ${occurrences} בקשות. הבקשה הבאה נכשלה: ${rpcError.message}`);
+        } else {
+          setError(rpcError.message);
+        }
+        return;
+      }
+      succeeded++;
+    }
 
     setSubmitting(false);
-    if (rpcError) {
-      setError(rpcError.message);
-      return;
-    }
+    setSentCount(succeeded);
     setSent(true);
   }
 
@@ -93,7 +115,7 @@ export function BookingRequestForm({
   if (sent) {
     return (
       <p className="rounded bg-brass/20 px-3 py-2 text-sm font-semibold text-pine">
-        הבקשה נשלחה! אפשר לעקוב אחריה ב
+        {sentCount > 1 ? `${sentCount} בקשות נשלחו!` : "הבקשה נשלחה!"} אפשר לעקוב אחריהן ב
         <a href="/my-bookings" className="underline">
           ההליכות שלי
         </a>
@@ -166,12 +188,26 @@ export function BookingRequestForm({
         rows={2}
         className="rounded border border-line bg-paper-hi px-2 py-1.5 text-sm"
       />
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={recurring} onChange={(e) => setRecurring(e.target.checked)} />
+        הליכה קבועה (כל שבוע, באותו יום ושעה)
+      </label>
+      {recurring && (
+        <label className="flex items-center gap-2 text-sm">
+          למשך:
+          <select value={weeks} onChange={(e) => setWeeks(Number(e.target.value))} className="rounded border border-line bg-paper-hi px-2 py-1.5 text-sm">
+            {[2, 3, 4, 6, 8].map((w) => (
+              <option key={w} value={w}>{w} שבועות</option>
+            ))}
+          </select>
+        </label>
+      )}
       <button
         type="submit"
         disabled={submitting}
         className="rounded bg-brass px-3 py-1.5 text-sm font-bold text-ink disabled:opacity-60"
       >
-        {submitting ? "שולח..." : "שליחת בקשה"}
+        {submitting ? "שולח..." : recurring ? `שליחת ${weeks} בקשות` : "שליחת בקשה"}
       </button>
       {error && <p className="text-xs text-rust">{error}</p>}
     </form>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { Loading } from "@/components/Loading";
 import { BookingStatusBadge, statusBorderClass } from "@/components/BookingStatusBadge";
+import { BookingStatusTimeline } from "@/components/BookingStatusTimeline";
 import { WalkPhotoUpload } from "@/components/WalkPhotoUpload";
 
 // Flip to true once the walk_photo_url / set_walk_photo / walk-photos
@@ -223,6 +224,7 @@ export default function DashboardPage() {
                 {b.price_ils ? ` · ${b.price_ils} ₪` : ""}
               </p>
               {b.owner_message && <p className="mt-1 text-sm text-ink/60">&rdquo;{b.owner_message}&rdquo;</p>}
+              <BookingStatusTimeline status={b.status} />
 
               <div className="mt-2 flex flex-wrap gap-2">
                 {b.status === "requested" && (

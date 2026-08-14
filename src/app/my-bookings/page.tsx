@@ -2,10 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { ReviewForm } from "@/components/ReviewForm";
 import { Loading } from "@/components/Loading";
 import { BookingStatusBadge, statusBorderClass } from "@/components/BookingStatusBadge";
+import { BookingStatusTimeline } from "@/components/BookingStatusTimeline";
 
 type Booking = {
   id: string;
@@ -151,6 +153,7 @@ export default function MyBookingsPage() {
                 {b.price_ils ? ` · ${b.price_ils} ₪` : ""}
               </p>
               {b.owner_message && <p className="mt-1 text-sm text-ink/60">&rdquo;{b.owner_message}&rdquo;</p>}
+              <BookingStatusTimeline status={b.status} />
 
               {b.walk_photo_url && (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -184,6 +187,14 @@ export default function MyBookingsPage() {
                       סימון כהושלם
                     </button>
                   </>
+                )}
+                {b.status === "completed" && (
+                  <Link
+                    href={`/walkers/${b.walker_id}?dog=${b.dog_id}`}
+                    className="rounded bg-brass px-3 py-1 text-sm font-bold text-ink"
+                  >
+                    הזמן שוב
+                  </Link>
                 )}
                 {contactByBooking.has(b.id) && (
                   <p className="w-full text-sm font-[var(--font-mono)] text-pine" dir="ltr">
