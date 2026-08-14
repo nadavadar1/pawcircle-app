@@ -71,6 +71,7 @@ create table bookings (
   status text not null check (status in ('requested','accepted','declined','cancelled','completed')) default 'requested',
   price_ils integer,
   owner_message text,
+  walk_photo_url text,
   created_at timestamptz not null default now(),
   responded_at timestamptz
 );
@@ -281,6 +282,34 @@ begin
 end;
 $$;
 
+-- Lets the walker on an accepted/completed booking attach a photo from the
+-- walk. Only the assigned walker may set it, at any point after acceptance.
+create or replace function set_walk_photo(p_booking_id uuid, p_photo_url text)
+returns void
+language plpgsql
+security definer
+as $$
+declare
+  v_me uuid := auth.uid();
+  v_booking record;
+begin
+  select * into v_booking from bookings where id = p_booking_id;
+  if v_booking is null then
+    raise exception 'booking not found';
+  end if;
+
+  if v_me is null or v_me <> v_booking.walker_id then
+    raise exception 'not authorized';
+  end if;
+
+  if v_booking.status not in ('accepted', 'completed') then
+    raise exception 'booking must be accepted or completed to attach a photo';
+  end if;
+
+  update bookings set walk_photo_url = p_photo_url where id = p_booking_id;
+end;
+$$;
+
 -- Reveals both phone numbers once a booking has moved past "requested" —
 -- the only way `profiles.phone` ever leaves the database.
 create or replace function get_contact_info(p_booking_id uuid)
@@ -361,7 +390,7 @@ $$;
 -- ─────────────────────────────────────────────────────────────
 
 insert into storage.buckets (id, name, public)
-values ('profile-photos', 'profile-photos', true), ('dog-photos', 'dog-photos', true)
+values ('profile-photos', 'profile-photos', true), ('dog-photos', 'dog-photos', true), ('walk-photos', 'walk-photos', true)
 on conflict (id) do nothing;
 
 create policy "anyone can view profile photos" on storage.objects
@@ -377,3 +406,10 @@ create policy "upload own dog photo" on storage.objects
   for insert with check (bucket_id = 'dog-photos' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy "replace own dog photo" on storage.objects
   for update using (bucket_id = 'dog-photos' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "anyone can view walk photos" on storage.objects
+  for select using (bucket_id = 'walk-photos');
+create policy "upload own walk photo" on storage.objects
+  for insert with check (bucket_id = 'walk-photos' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy "replace own walk photo" on storage.objects
+  for update using (bucket_id = 'walk-photos' and (storage.foldername(name))[1] = auth.uid()::text);
