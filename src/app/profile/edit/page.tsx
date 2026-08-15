@@ -8,6 +8,11 @@ import { ChipMultiSelect } from "@/components/ChipMultiSelect";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { DogEditor, type Dog } from "@/components/DogEditor";
 import { Loading } from "@/components/Loading";
+import { InviteFriends } from "@/components/InviteFriends";
+
+// Flip to true once the referred_by column migration has been run against
+// the live database.
+const REFERRALS_FEATURE_ENABLED = false;
 
 type MyProfile = {
   id: string;
@@ -236,6 +241,8 @@ export default function ProfileEditPage() {
         {profileSaved && <p className="text-xs text-sage">נשמר ✓</p>}
         {profileError && <p className="text-xs text-rust">{profileError}</p>}
       </form>
+
+      {REFERRALS_FEATURE_ENABLED && <InviteFriends userId={profile.id} />}
 
       {profile.role === "walker" && (
         <div className="mb-8 rounded border border-line bg-paper-hi p-4">

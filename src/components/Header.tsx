@@ -27,6 +27,14 @@ export function Header() {
     window.goatcounter?.count({ path: pathname, title: document.title });
   }, [pathname]);
 
+  // Capture a referral code from the URL (?ref=<referrer-user-id>) into
+  // localStorage so it survives the login/onboarding redirect chain, then
+  // gets attached to the new profile at signup time.
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref) localStorage.setItem("pawcircle_ref", ref);
+  }, []);
+
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
 

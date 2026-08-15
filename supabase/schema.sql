@@ -15,8 +15,10 @@ create table profiles (
   phone text not null,
   photo_url text,
   city text not null,
+  referred_by uuid references profiles(id) on delete set null,
   created_at timestamptz not null default now()
 );
+create index on profiles (referred_by);
 
 create table dogs (
   id uuid primary key default gen_random_uuid(),
@@ -152,8 +154,8 @@ create policy "update own profile" on profiles
   for update using (auth.uid() = id);
 
 revoke select on profiles from anon, authenticated;
-grant select (id, role, full_name, photo_url, city, created_at) on profiles to anon, authenticated;
-grant insert (id, role, full_name, phone, photo_url, city) on profiles to anon, authenticated;
+grant select (id, role, full_name, photo_url, city, created_at, referred_by) on profiles to anon, authenticated;
+grant insert (id, role, full_name, phone, photo_url, city, referred_by) on profiles to anon, authenticated;
 grant update (role, full_name, phone, photo_url, city) on profiles to anon, authenticated;
 
 -- dogs: owner always sees their own; a walker sees a dog's details once

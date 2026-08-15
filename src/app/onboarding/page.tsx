@@ -9,6 +9,10 @@ import { ChipMultiSelect } from "@/components/ChipMultiSelect";
 
 type Role = "owner" | "walker" | "both";
 
+// Flip to true once the referred_by column migration has been run against
+// the live database.
+const REFERRALS_FEATURE_ENABLED = false;
+
 export default function OnboardingPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
@@ -63,6 +67,8 @@ export default function OnboardingPage() {
 
     const supabase = getSupabaseBrowserClient();
 
+    const referredBy = REFERRALS_FEATURE_ENABLED ? localStorage.getItem("pawcircle_ref") : null;
+
     const { error: profileError } = await supabase.from("profiles").insert({
       id: userId,
       role,
@@ -70,6 +76,7 @@ export default function OnboardingPage() {
       phone,
       city,
       photo_url: photoUrl,
+      ...(referredBy ? { referred_by: referredBy } : {}),
     });
 
     if (profileError) {
