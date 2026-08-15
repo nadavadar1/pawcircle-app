@@ -184,6 +184,14 @@ export default async function WalkerProfilePage({
           </div>
         )}
 
+        {user?.id !== walker.id && (
+          <ul className="mt-4 flex flex-col gap-1 text-xs text-ink/60">
+            <li>✓ שם מלא ומספר טלפון אמיתיים — לא פרופיל אנונימי</li>
+            <li>✓ ביקורות מבעלי כלבים אמיתיים מהשכונה</li>
+            <li>✓ פרטי הקשר נחשפים רק אחרי שהבקשה מאושרת</li>
+          </ul>
+        )}
+
         <div className="mt-5">
           {user?.id === walker.id ? (
             <p className="text-sm text-ink/60">

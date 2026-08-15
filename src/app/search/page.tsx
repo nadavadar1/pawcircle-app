@@ -2,10 +2,15 @@ import Link from "next/link";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { CITIES, SPECIALTIES, DOG_SIZES } from "@/lib/constants";
 import { ChipMultiSelect } from "@/components/ChipMultiSelect";
+import { AreaInterestForm } from "@/components/AreaInterestForm";
 
 // Flip to true once the favorites table migration has been run against
 // the live database.
 const FAVORITES_FEATURE_ENABLED = true;
+
+// Flip to true once the area_interest table migration has been run against
+// the live database.
+const AREA_INTEREST_FEATURE_ENABLED = false;
 
 type SearchParams = {
   minPrice?: string;
@@ -168,7 +173,15 @@ export default async function SearchPage({
       </form>
 
       {results.length === 0 ? (
-        <p className="text-ink/70">אין עדיין מטיילים שתואמים את החיפוש. נסו להרחיב את הסינון.</p>
+        <div className="flex flex-col gap-4">
+          <p className="text-ink/70">אין עדיין מטיילים שתואמים את החיפוש. נסו להרחיב את הסינון.</p>
+          {AREA_INTEREST_FEATURE_ENABLED && (
+            <AreaInterestForm
+              areas={areas}
+              filtersUsed={JSON.stringify({ minPrice: params.minPrice, maxPrice: params.maxPrice, sizes, areas, specialties })}
+            />
+          )}
+        </div>
       ) : (
         <ul className="flex flex-col gap-3">
           {results.map(({ walker, profile, trust, isFavorite }) => (

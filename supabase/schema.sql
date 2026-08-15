@@ -104,6 +104,17 @@ create table favorites (
 );
 create index on favorites (owner_id);
 
+-- Captured when a search returns zero walkers — turns a dead-end into a
+-- lead plus real signal of where demand exists ahead of supply. Private:
+-- no select policy, so only the service role (dashboard) can read it.
+create table area_interest (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  areas text[] not null default '{}',
+  filters_used text,
+  created_at timestamptz not null default now()
+);
+
 -- Live "מאומת קהילתית" (community-verified) badge: a walker qualifies once
 -- any single declared neighborhood has 3+ reviews from 3 distinct reviewers.
 -- Also carries the overall average rating + review count (Uber-style score,
@@ -172,6 +183,12 @@ create policy "manage own dogs" on dogs
 -- favorites: private to the owner who saved them.
 create policy "manage own favorites" on favorites
   for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+
+-- area_interest: anyone (incl. anonymous) can leave interest; nobody can
+-- read it back via the API — deliberately no select policy.
+alter table area_interest enable row level security;
+create policy "anyone can express area interest" on area_interest
+  for insert with check (true);
 
 -- walker_profiles: approved walkers are publicly visible; a walker always
 -- sees their own row (e.g. while still pending_review). `status` is
