@@ -11,7 +11,7 @@ type Role = "owner" | "walker" | "both";
 
 // Flip to true once the referred_by column migration has been run against
 // the live database.
-const REFERRALS_FEATURE_ENABLED = false;
+const REFERRALS_FEATURE_ENABLED = true;
 
 export default function OnboardingPage() {
   const router = useRouter();

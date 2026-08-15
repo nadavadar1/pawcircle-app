@@ -12,7 +12,7 @@ import { InviteFriends } from "@/components/InviteFriends";
 
 // Flip to true once the referred_by column migration has been run against
 // the live database.
-const REFERRALS_FEATURE_ENABLED = false;
+const REFERRALS_FEATURE_ENABLED = true;
 
 type MyProfile = {
   id: string;
