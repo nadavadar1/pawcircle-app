@@ -102,8 +102,37 @@ export default async function WalkerProfilePage({
     viewerRole = viewerProfile?.role ?? null;
   }
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    serviceType: "Dog Walking",
+    name: `הליכת כלבים עם ${profile.full_name}`,
+    provider: {
+      "@type": "Person",
+      name: profile.full_name,
+      image: profile.photo_url ?? undefined,
+    },
+    areaServed: walker.service_areas,
+    offers: {
+      "@type": "Offer",
+      price: walker.hourly_rate_ils,
+      priceCurrency: "ILS",
+    },
+    ...(trust && trust.review_count > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: trust.avg_rating,
+            reviewCount: trust.review_count,
+          },
+        }
+      : {}),
+  };
+
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
+      {/* eslint-disable-next-line react/no-danger */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <Link href="/search" className="mb-6 inline-block text-sm text-rust hover:underline">
         ← חזרה לחיפוש
       </Link>
