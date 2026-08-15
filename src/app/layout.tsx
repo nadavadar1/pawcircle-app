@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Frank_Ruhl_Libre, Assistant, IBM_Plex_Mono } from "next/font/google";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import "./globals.css";
 
 const frankRuhl = Frank_Ruhl_Libre({
@@ -26,11 +27,21 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://pawcircle-app.vercel.app"),
   title: "PawCircle",
   description: "מטיילים עם שם, לא רק כוכביות.",
+  icons: {
+    icon: "/icon.png",
+    apple: "/icons/icon-192.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "PawCircle",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: "#1F3B2E",
 };
 
 export default function RootLayout({
@@ -50,6 +61,7 @@ export default function RootLayout({
           src="https://gc.zgo.at/count.js"
           strategy="afterInteractive"
         />
+        <ServiceWorkerRegister />
         <Header />
         <div className="flex flex-1 flex-col">{children}</div>
         <Footer />
