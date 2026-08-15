@@ -27,7 +27,7 @@ const AVAILABILITY_FEATURE_ENABLED = true;
 
 // Flip to true once the push_subscriptions table migration AND the VAPID
 // env vars (NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY) are live.
-const PUSH_FEATURE_ENABLED = false;
+const PUSH_FEATURE_ENABLED = true;
 
 type MyProfile = {
   id: string;

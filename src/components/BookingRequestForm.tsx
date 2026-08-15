@@ -11,7 +11,7 @@ const AVAILABILITY_FEATURE_ENABLED = true;
 
 // Flip to true once the push_subscriptions table migration AND the VAPID
 // env vars are live.
-const PUSH_FEATURE_ENABLED = false;
+const PUSH_FEATURE_ENABLED = true;
 
 type Dog = { id: string; name: string; size: string };
 
