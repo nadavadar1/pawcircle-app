@@ -130,6 +130,19 @@ create table area_interest (
   created_at timestamptz not null default now()
 );
 
+-- A browser push subscription for a logged-in user. A user can have several
+-- (one per device/browser). Deleted server-side whenever a push send comes
+-- back 404/410 (the browser unsubscribed or the subscription expired).
+create table push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+create index on push_subscriptions (user_id);
+
 -- A user flagging another user's behavior, optionally tied to a specific
 -- booking. Private: no select policy, only the service role (dashboard)
 -- can read it, same pattern as area_interest.
@@ -232,6 +245,13 @@ create policy "anyone can express area interest" on area_interest
 alter table reports enable row level security;
 create policy "authenticated users can report" on reports
   for insert with check (reporter_id = auth.uid());
+
+-- push_subscriptions: private to the owning user. The notify-booking API
+-- route reads other users' subscriptions using the service-role client
+-- (bypasses RLS, after independently verifying the caller server-side).
+alter table push_subscriptions enable row level security;
+create policy "manage own push subscriptions" on push_subscriptions
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 -- walker_profiles: approved walkers are publicly visible; a walker always
 -- sees their own row (e.g. while still pending_review). `status` is

@@ -11,6 +11,7 @@ import { Loading } from "@/components/Loading";
 import { InviteFriends } from "@/components/InviteFriends";
 import { IdVerificationUpload } from "@/components/IdVerificationUpload";
 import { BlockedDatesManager } from "@/components/BlockedDatesManager";
+import { NotificationOptIn } from "@/components/NotificationOptIn";
 
 // Flip to true once the referred_by column migration has been run against
 // the live database.
@@ -23,6 +24,10 @@ const ID_VERIFICATION_FEATURE_ENABLED = false;
 // Flip to true once the walker_blocked_dates table migration has been run
 // against the live database.
 const AVAILABILITY_FEATURE_ENABLED = false;
+
+// Flip to true once the push_subscriptions table migration AND the VAPID
+// env vars (NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY) are live.
+const PUSH_FEATURE_ENABLED = false;
 
 type MyProfile = {
   id: string;
@@ -253,6 +258,8 @@ export default function ProfileEditPage() {
         {profileSaved && <p className="text-xs text-sage">נשמר ✓</p>}
         {profileError && <p className="text-xs text-rust">{profileError}</p>}
       </form>
+
+      {PUSH_FEATURE_ENABLED && <NotificationOptIn />}
 
       {REFERRALS_FEATURE_ENABLED && <InviteFriends userId={profile.id} />}
 

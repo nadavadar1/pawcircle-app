@@ -9,6 +9,10 @@ import { DOG_SIZES } from "@/lib/constants";
 // against the live database.
 const AVAILABILITY_FEATURE_ENABLED = false;
 
+// Flip to true once the push_subscriptions table migration AND the VAPID
+// env vars are live.
+const PUSH_FEATURE_ENABLED = false;
+
 type Dog = { id: string; name: string; size: string };
 
 export function BookingRequestForm({
@@ -103,9 +107,10 @@ export function BookingRequestForm({
     const occurrences = recurring ? weeks : 1;
 
     let succeeded = 0;
+    let firstBookingId: string | null = null;
     for (let i = 0; i < occurrences; i++) {
       const requestedTime = new Date(baseTime.getTime() + i * 7 * 24 * 60 * 60 * 1000).toISOString();
-      const { error: rpcError } = await supabase.rpc("create_booking_request", {
+      const { data: newBookingId, error: rpcError } = await supabase.rpc("create_booking_request", {
         p_walker_id: walkerId,
         p_dog_id: dogId,
         p_requested_time: requestedTime,
@@ -121,7 +126,16 @@ export function BookingRequestForm({
         }
         return;
       }
+      if (!firstBookingId) firstBookingId = newBookingId as string;
       succeeded++;
+    }
+
+    if (PUSH_FEATURE_ENABLED && firstBookingId) {
+      fetch("/api/push/notify-booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId: firstBookingId, event: "requested" }),
+      }).catch(() => {});
     }
 
     setSubmitting(false);

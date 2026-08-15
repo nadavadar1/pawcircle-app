@@ -17,6 +17,10 @@ const WALK_PHOTO_FEATURE_ENABLED = true;
 // live database.
 const REPORT_FEATURE_ENABLED = false;
 
+// Flip to true once the push_subscriptions table migration AND the VAPID
+// env vars are live.
+const PUSH_FEATURE_ENABLED = false;
+
 type Booking = {
   id: string;
   owner_id: string;
@@ -144,6 +148,13 @@ export default function DashboardPage() {
     if (error) {
       setErrorByBooking((prev) => new Map(prev).set(id, "הפעולה נכשלה, נסה שוב."));
       return;
+    }
+    if (PUSH_FEATURE_ENABLED && status === "accepted") {
+      fetch("/api/push/notify-booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId: id, event: "accepted" }),
+      }).catch(() => {});
     }
     load();
   }
