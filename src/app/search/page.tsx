@@ -10,7 +10,7 @@ const FAVORITES_FEATURE_ENABLED = true;
 
 // Flip to true once the area_interest table migration has been run against
 // the live database.
-const AREA_INTEREST_FEATURE_ENABLED = false;
+const AREA_INTEREST_FEATURE_ENABLED = true;
 
 type SearchParams = {
   minPrice?: string;
