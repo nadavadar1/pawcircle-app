@@ -130,6 +130,19 @@ create table area_interest (
   created_at timestamptz not null default now()
 );
 
+-- A user flagging another user's behavior, optionally tied to a specific
+-- booking. Private: no select policy, only the service role (dashboard)
+-- can read it, same pattern as area_interest.
+create table reports (
+  id uuid primary key default gen_random_uuid(),
+  reporter_id uuid not null references profiles(id) on delete cascade,
+  reported_id uuid not null references profiles(id) on delete cascade,
+  booking_id uuid references bookings(id) on delete set null,
+  reason text not null check (char_length(reason) > 0),
+  created_at timestamptz not null default now()
+);
+create index on reports (reported_id);
+
 -- Live "מאומת קהילתית" (community-verified) badge: a walker qualifies once
 -- any single declared neighborhood has 3+ reviews from 3 distinct reviewers.
 -- Also carries the overall average rating + review count (Uber-style score,
@@ -213,6 +226,12 @@ create policy "manage own blocked dates" on walker_blocked_dates
 alter table area_interest enable row level security;
 create policy "anyone can express area interest" on area_interest
   for insert with check (true);
+
+-- reports: any authenticated user can file a report about another user;
+-- nobody can read it back via the API — deliberately no select policy.
+alter table reports enable row level security;
+create policy "authenticated users can report" on reports
+  for insert with check (reporter_id = auth.uid());
 
 -- walker_profiles: approved walkers are publicly visible; a walker always
 -- sees their own row (e.g. while still pending_review). `status` is

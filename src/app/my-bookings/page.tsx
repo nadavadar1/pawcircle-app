@@ -8,6 +8,11 @@ import { ReviewForm } from "@/components/ReviewForm";
 import { Loading } from "@/components/Loading";
 import { BookingStatusBadge, statusBorderClass } from "@/components/BookingStatusBadge";
 import { BookingStatusTimeline } from "@/components/BookingStatusTimeline";
+import { ReportButton } from "@/components/ReportButton";
+
+// Flip to true once the reports table migration has been run against the
+// live database.
+const REPORT_FEATURE_ENABLED = false;
 
 type Booking = {
   id: string;
@@ -216,6 +221,12 @@ export default function MyBookingsPage() {
                     onSubmitted={() => setReviewedBookingIds((prev) => new Set(prev).add(b.id))}
                   />
                 )
+              )}
+
+              {REPORT_FEATURE_ENABLED && (
+                <div className="mt-2">
+                  <ReportButton reportedId={b.walker_id} bookingId={b.id} />
+                </div>
               )}
             </li>
           ))}

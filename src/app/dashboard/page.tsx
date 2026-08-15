@@ -7,10 +7,15 @@ import { Loading } from "@/components/Loading";
 import { BookingStatusBadge, statusBorderClass } from "@/components/BookingStatusBadge";
 import { BookingStatusTimeline } from "@/components/BookingStatusTimeline";
 import { WalkPhotoUpload } from "@/components/WalkPhotoUpload";
+import { ReportButton } from "@/components/ReportButton";
 
 // Flip to true once the walk_photo_url / set_walk_photo / walk-photos
 // migration has been run against the live database.
 const WALK_PHOTO_FEATURE_ENABLED = true;
+
+// Flip to true once the reports table migration has been run against the
+// live database.
+const REPORT_FEATURE_ENABLED = false;
 
 type Booking = {
   id: string;
@@ -272,6 +277,12 @@ export default function DashboardPage() {
                     setBookings((prev) => prev.map((x) => (x.id === b.id ? { ...x, walk_photo_url: url } : x)))
                   }
                 />
+              )}
+
+              {REPORT_FEATURE_ENABLED && (
+                <div className="mt-2">
+                  <ReportButton reportedId={b.owner_id} bookingId={b.id} />
+                </div>
               )}
             </li>
           ))}

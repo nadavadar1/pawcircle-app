@@ -5,10 +5,15 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { BookingRequestForm } from "@/components/BookingRequestForm";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { WhatsAppShareButton } from "@/components/WhatsAppShareButton";
+import { ReportButton } from "@/components/ReportButton";
 
 // Flip to true once the favorites table migration has been run against
 // the live database.
 const FAVORITES_FEATURE_ENABLED = true;
+
+// Flip to true once the reports table migration has been run against the
+// live database.
+const REPORT_FEATURE_ENABLED = false;
 
 // Flip to true once the id_document_url/id_verified columns migration has
 // been run against the live database.
@@ -209,6 +214,12 @@ export default async function WalkerProfilePage({
             <li>✓ ביקורות מבעלי כלבים אמיתיים מהשכונה</li>
             <li>✓ פרטי הקשר נחשפים רק אחרי שהבקשה מאושרת</li>
           </ul>
+        )}
+
+        {REPORT_FEATURE_ENABLED && user && user.id !== walker.id && (
+          <div className="mt-3">
+            <ReportButton reportedId={walker.id} />
+          </div>
         )}
 
         <div className="mt-5">
