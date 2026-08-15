@@ -15,7 +15,7 @@ const WALK_PHOTO_FEATURE_ENABLED = true;
 
 // Flip to true once the reports table migration has been run against the
 // live database.
-const REPORT_FEATURE_ENABLED = false;
+const REPORT_FEATURE_ENABLED = true;
 
 // Flip to true once the push_subscriptions table migration AND the VAPID
 // env vars are live.

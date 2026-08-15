@@ -13,11 +13,11 @@ const FAVORITES_FEATURE_ENABLED = true;
 
 // Flip to true once the reports table migration has been run against the
 // live database.
-const REPORT_FEATURE_ENABLED = false;
+const REPORT_FEATURE_ENABLED = true;
 
 // Flip to true once the id_document_url/id_verified columns migration has
 // been run against the live database.
-const ID_VERIFICATION_FEATURE_ENABLED = false;
+const ID_VERIFICATION_FEATURE_ENABLED = true;
 
 const AVATAR_COLORS = ["bg-pine", "bg-rust", "bg-brass", "bg-sage"];
 

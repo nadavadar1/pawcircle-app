@@ -12,7 +12,7 @@ import { ReportButton } from "@/components/ReportButton";
 
 // Flip to true once the reports table migration has been run against the
 // live database.
-const REPORT_FEATURE_ENABLED = false;
+const REPORT_FEATURE_ENABLED = true;
 
 type Booking = {
   id: string;

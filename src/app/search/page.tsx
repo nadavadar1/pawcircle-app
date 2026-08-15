@@ -14,7 +14,7 @@ const AREA_INTEREST_FEATURE_ENABLED = true;
 
 // Flip to true once the id_document_url/id_verified columns migration has
 // been run against the live database.
-const ID_VERIFICATION_FEATURE_ENABLED = false;
+const ID_VERIFICATION_FEATURE_ENABLED = true;
 
 type SearchParams = {
   minPrice?: string;

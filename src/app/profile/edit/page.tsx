@@ -19,11 +19,11 @@ const REFERRALS_FEATURE_ENABLED = true;
 
 // Flip to true once the id_document_url/id_verified columns migration has
 // been run against the live database.
-const ID_VERIFICATION_FEATURE_ENABLED = false;
+const ID_VERIFICATION_FEATURE_ENABLED = true;
 
 // Flip to true once the walker_blocked_dates table migration has been run
 // against the live database.
-const AVAILABILITY_FEATURE_ENABLED = false;
+const AVAILABILITY_FEATURE_ENABLED = true;
 
 // Flip to true once the push_subscriptions table migration AND the VAPID
 // env vars (NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY) are live.

@@ -7,7 +7,7 @@ import { DOG_SIZES } from "@/lib/constants";
 
 // Flip to true once the walker_blocked_dates table migration has been run
 // against the live database.
-const AVAILABILITY_FEATURE_ENABLED = false;
+const AVAILABILITY_FEATURE_ENABLED = true;
 
 // Flip to true once the push_subscriptions table migration AND the VAPID
 // env vars are live.
