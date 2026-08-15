@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { BookingRequestForm } from "@/components/BookingRequestForm";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { WhatsAppShareButton } from "@/components/WhatsAppShareButton";
 
 // Flip to true once the favorites table migration has been run against
 // the live database.
@@ -192,9 +193,13 @@ export default async function WalkerProfilePage({
             )}
           </dl>
 
-        {FAVORITES_FEATURE_ENABLED && user && user.id !== walker.id && (
-          <div className="mt-4">
-            <FavoriteButton walkerId={walker.id} />
+        {user?.id !== walker.id && (
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {FAVORITES_FEATURE_ENABLED && user && <FavoriteButton walkerId={walker.id} />}
+            <WhatsAppShareButton
+              text={`תראו את ${profile.full_name} — מטייל/ת כלבים מאומת/ת ב-PawCircle:`}
+              url={`https://pawcircle-app.vercel.app/walkers/${walker.id}`}
+            />
           </div>
         )}
 

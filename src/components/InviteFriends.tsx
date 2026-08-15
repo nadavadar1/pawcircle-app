@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { WhatsAppShareButton } from "@/components/WhatsAppShareButton";
 
 export function InviteFriends({ userId }: { userId: string }) {
   const [count, setCount] = useState<number | null>(null);
@@ -45,6 +46,12 @@ export function InviteFriends({ userId }: { userId: string }) {
         >
           {copied ? "הועתק ✓" : "העתקה"}
         </button>
+      </div>
+      <div className="mt-2">
+        <WhatsAppShareButton
+          text="גיליתי אפליקציה למטיילי כלבים עם שם אמיתי וביקורות מהקהילה — PawCircle:"
+          url={link}
+        />
       </div>
     </div>
   );
