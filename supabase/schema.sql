@@ -16,6 +16,8 @@ create table profiles (
   photo_url text,
   city text not null,
   referred_by uuid references profiles(id) on delete set null,
+  id_document_url text,
+  id_verified boolean not null default false,
   created_at timestamptz not null default now()
 );
 create index on profiles (referred_by);
@@ -165,9 +167,9 @@ create policy "update own profile" on profiles
   for update using (auth.uid() = id);
 
 revoke select on profiles from anon, authenticated;
-grant select (id, role, full_name, photo_url, city, created_at, referred_by) on profiles to anon, authenticated;
+grant select (id, role, full_name, photo_url, city, created_at, referred_by, id_verified) on profiles to anon, authenticated;
 grant insert (id, role, full_name, phone, photo_url, city, referred_by) on profiles to anon, authenticated;
-grant update (role, full_name, phone, photo_url, city) on profiles to anon, authenticated;
+grant update (role, full_name, phone, photo_url, city, id_document_url) on profiles to anon, authenticated;
 
 -- dogs: owner always sees their own; a walker sees a dog's details once
 -- there's a booking (any status) between them so they can review a request.
@@ -228,13 +230,13 @@ create policy "reviews are public" on reviews
 -- reading back their OWN phone to edit it — this RPC is the one safe way
 -- back in, hard-scoped to auth.uid() so it can never return anyone else's.
 create or replace function get_my_profile()
-returns table (id uuid, role text, full_name text, phone text, photo_url text, city text)
+returns table (id uuid, role text, full_name text, phone text, photo_url text, city text, id_document_url text, id_verified boolean)
 language plpgsql
 security definer
 as $$
 begin
   return query
-    select p.id, p.role, p.full_name, p.phone, p.photo_url, p.city
+    select p.id, p.role, p.full_name, p.phone, p.photo_url, p.city, p.id_document_url, p.id_verified
     from profiles p
     where p.id = auth.uid();
 end;
@@ -424,7 +426,7 @@ $$;
 -- ─────────────────────────────────────────────────────────────
 
 insert into storage.buckets (id, name, public)
-values ('profile-photos', 'profile-photos', true), ('dog-photos', 'dog-photos', true), ('walk-photos', 'walk-photos', true)
+values ('profile-photos', 'profile-photos', true), ('dog-photos', 'dog-photos', true), ('walk-photos', 'walk-photos', true), ('id-documents', 'id-documents', false)
 on conflict (id) do nothing;
 
 create policy "anyone can view profile photos" on storage.objects
@@ -447,3 +449,15 @@ create policy "upload own walk photo" on storage.objects
   for insert with check (bucket_id = 'walk-photos' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy "replace own walk photo" on storage.objects
   for update using (bucket_id = 'walk-photos' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- id-documents: private bucket. Only the uploader can read their own
+-- document back (e.g. to confirm what was submitted) — nobody else can,
+-- including other authenticated users. The founder reviews and approves
+-- via the Supabase dashboard (service role bypasses RLS), same manual
+-- pattern already used for walker_profiles.status approval.
+create policy "view own id document" on storage.objects
+  for select using (bucket_id = 'id-documents' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy "upload own id document" on storage.objects
+  for insert with check (bucket_id = 'id-documents' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy "replace own id document" on storage.objects
+  for update using (bucket_id = 'id-documents' and (storage.foldername(name))[1] = auth.uid()::text);

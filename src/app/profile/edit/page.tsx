@@ -9,10 +9,15 @@ import { PhotoUpload } from "@/components/PhotoUpload";
 import { DogEditor, type Dog } from "@/components/DogEditor";
 import { Loading } from "@/components/Loading";
 import { InviteFriends } from "@/components/InviteFriends";
+import { IdVerificationUpload } from "@/components/IdVerificationUpload";
 
 // Flip to true once the referred_by column migration has been run against
 // the live database.
 const REFERRALS_FEATURE_ENABLED = true;
+
+// Flip to true once the id_document_url/id_verified columns migration has
+// been run against the live database.
+const ID_VERIFICATION_FEATURE_ENABLED = false;
 
 type MyProfile = {
   id: string;
@@ -21,6 +26,8 @@ type MyProfile = {
   phone: string;
   photo_url: string | null;
   city: string;
+  id_document_url: string | null;
+  id_verified: boolean;
 };
 
 type WalkerProfile = {
@@ -243,6 +250,16 @@ export default function ProfileEditPage() {
       </form>
 
       {REFERRALS_FEATURE_ENABLED && <InviteFriends userId={profile.id} />}
+
+      {ID_VERIFICATION_FEATURE_ENABLED && (profile.role === "walker" || profile.role === "both") && (
+        <div className="mb-8">
+          <IdVerificationUpload
+            userId={profile.id}
+            initialDocumentUrl={profile.id_document_url}
+            initialVerified={profile.id_verified}
+          />
+        </div>
+      )}
 
       {profile.role === "walker" && (
         <div className="mb-8 rounded border border-line bg-paper-hi p-4">

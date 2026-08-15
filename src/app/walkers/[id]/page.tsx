@@ -9,6 +9,10 @@ import { FavoriteButton } from "@/components/FavoriteButton";
 // the live database.
 const FAVORITES_FEATURE_ENABLED = true;
 
+// Flip to true once the id_document_url/id_verified columns migration has
+// been run against the live database.
+const ID_VERIFICATION_FEATURE_ENABLED = false;
+
 const AVATAR_COLORS = ["bg-pine", "bg-rust", "bg-brass", "bg-sage"];
 
 function avatarColorFor(name: string) {
@@ -55,15 +59,18 @@ export default async function WalkerProfilePage({
   const { id } = await params;
   const supabase = await getSupabaseServerClient();
 
-  const [{ data: walker }, { data: profile }, { data: trust }, { data: reviews }] =
+  const [{ data: walker }, { data: profileData }, { data: trust }, { data: reviews }] =
     await Promise.all([
       supabase.from("walker_profiles").select("*").eq("id", id).eq("status", "approved").maybeSingle(),
-      supabase.from("profiles").select("id, full_name, photo_url, city").eq("id", id).maybeSingle(),
+      ID_VERIFICATION_FEATURE_ENABLED
+        ? supabase.from("profiles").select("id, full_name, photo_url, city, id_verified").eq("id", id).maybeSingle()
+        : supabase.from("profiles").select("id, full_name, photo_url, city").eq("id", id).maybeSingle(),
       supabase.from("walker_trust_status").select("*").eq("walker_id", id).maybeSingle(),
       supabase.from("reviews").select("*").eq("walker_id", id).order("created_at", { ascending: false }),
     ]);
 
-  if (!walker || !profile) notFound();
+  if (!walker || !profileData) notFound();
+  const profile = profileData as typeof profileData & { id_verified?: boolean };
 
   const reviewerIds = [...new Set((reviews ?? []).map((r) => r.reviewer_id))];
   let reviewersById = new Map<string, { full_name: string }>();
@@ -139,15 +146,22 @@ export default async function WalkerProfilePage({
             </div>
           </div>
 
-          {trust?.is_community_verified ? (
-            <p className="mb-3 inline-block rounded bg-brass/20 px-2 py-1 text-xs font-bold text-pine">
-              ✓ מאומת קהילתית · {trust.badge_area}
-            </p>
-          ) : (
-            <p className="mb-3 inline-block rounded bg-line px-2 py-1 text-xs font-semibold text-ink/60">
-              מטייל/ת חדש/ה ב-PawCircle
-            </p>
-          )}
+          <div className="mb-3 flex flex-wrap gap-2">
+            {trust?.is_community_verified ? (
+              <p className="inline-block rounded bg-brass/20 px-2 py-1 text-xs font-bold text-pine">
+                ✓ מאומת קהילתית · {trust.badge_area}
+              </p>
+            ) : (
+              <p className="inline-block rounded bg-line px-2 py-1 text-xs font-semibold text-ink/60">
+                מטייל/ת חדש/ה ב-PawCircle
+              </p>
+            )}
+            {ID_VERIFICATION_FEATURE_ENABLED && profile.id_verified && (
+              <p className="inline-block rounded bg-sage/20 px-2 py-1 text-xs font-bold text-pine">
+                ✓ זהות מאומתת
+              </p>
+            )}
+          </div>
 
           {walker.bio && <p className="mb-4 text-ink/90">{walker.bio}</p>}
 

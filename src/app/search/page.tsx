@@ -12,6 +12,10 @@ const FAVORITES_FEATURE_ENABLED = true;
 // the live database.
 const AREA_INTEREST_FEATURE_ENABLED = true;
 
+// Flip to true once the id_document_url/id_verified columns migration has
+// been run against the live database.
+const ID_VERIFICATION_FEATURE_ENABLED = false;
+
 type SearchParams = {
   minPrice?: string;
   maxPrice?: string;
@@ -39,6 +43,7 @@ type ProfileRow = {
   full_name: string;
   photo_url: string | null;
   city: string;
+  id_verified?: boolean;
 };
 
 type TrustRow = {
@@ -81,7 +86,10 @@ export default async function SearchPage({
 
   if (ids.length > 0) {
     const [{ data: profiles }, { data: trust }] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, photo_url, city").in("id", ids).returns<ProfileRow[]>(),
+      (ID_VERIFICATION_FEATURE_ENABLED
+        ? supabase.from("profiles").select("id, full_name, photo_url, city, id_verified").in("id", ids)
+        : supabase.from("profiles").select("id, full_name, photo_url, city").in("id", ids)
+      ).returns<ProfileRow[]>(),
       supabase.from("walker_trust_status").select("*").in("walker_id", ids).returns<TrustRow[]>(),
     ]);
     profilesById = new Map((profiles ?? []).map((p) => [p.id, p]));
@@ -229,6 +237,9 @@ export default async function SearchPage({
                     <p className="mt-1 text-xs font-bold text-pine">
                       ✓ מאומת קהילתית · {trust.badge_area}
                     </p>
+                  )}
+                  {ID_VERIFICATION_FEATURE_ENABLED && profile!.id_verified && (
+                    <p className="mt-1 text-xs font-bold text-pine">✓ זהות מאומתת</p>
                   )}
                   {walker.specialties.length > 0 && (
                     <p className="mt-1 text-xs text-ink/60">{walker.specialties.join(" · ")}</p>
