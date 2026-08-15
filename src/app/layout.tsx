@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Frank_Ruhl_Libre, Assistant, IBM_Plex_Mono } from "next/font/google";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import "./globals.css";
 
 const frankRuhl = Frank_Ruhl_Libre({
@@ -51,6 +52,7 @@ export default function RootLayout({
         />
         <Header />
         <div className="flex flex-1 flex-col">{children}</div>
+        <Footer />
       </body>
     </html>
   );
