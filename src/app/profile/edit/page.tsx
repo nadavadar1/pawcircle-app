@@ -10,6 +10,7 @@ import { DogEditor, type Dog } from "@/components/DogEditor";
 import { Loading } from "@/components/Loading";
 import { InviteFriends } from "@/components/InviteFriends";
 import { IdVerificationUpload } from "@/components/IdVerificationUpload";
+import { BlockedDatesManager } from "@/components/BlockedDatesManager";
 
 // Flip to true once the referred_by column migration has been run against
 // the live database.
@@ -18,6 +19,10 @@ const REFERRALS_FEATURE_ENABLED = true;
 // Flip to true once the id_document_url/id_verified columns migration has
 // been run against the live database.
 const ID_VERIFICATION_FEATURE_ENABLED = false;
+
+// Flip to true once the walker_blocked_dates table migration has been run
+// against the live database.
+const AVAILABILITY_FEATURE_ENABLED = false;
 
 type MyProfile = {
   id: string;
@@ -292,6 +297,8 @@ export default function ProfileEditPage() {
           {upgradeError && <p className="mt-2 text-xs text-rust">{upgradeError}</p>}
         </div>
       )}
+
+      {walker && AVAILABILITY_FEATURE_ENABLED && <BlockedDatesManager walkerId={profile.id} />}
 
       {walker && (
         <form onSubmit={saveWalker} className="mb-8 flex flex-col gap-3 rounded border border-line bg-paper-hi p-4">

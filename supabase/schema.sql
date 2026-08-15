@@ -106,6 +106,19 @@ create table favorites (
 );
 create index on favorites (owner_id);
 
+-- Dates a walker has explicitly blocked out (vacation, fully booked, etc).
+-- Checked both client-side (to steer the booking form) and inside
+-- create_booking_request() (the actual enforcement — client checks are UX
+-- only and can't be trusted).
+create table walker_blocked_dates (
+  id uuid primary key default gen_random_uuid(),
+  walker_id uuid not null references profiles(id) on delete cascade,
+  blocked_date date not null,
+  created_at timestamptz not null default now(),
+  unique (walker_id, blocked_date)
+);
+create index on walker_blocked_dates (walker_id);
+
 -- Captured when a search returns zero walkers — turns a dead-end into a
 -- lead plus real signal of where demand exists ahead of supply. Private:
 -- no select policy, so only the service role (dashboard) can read it.
@@ -185,6 +198,15 @@ create policy "manage own dogs" on dogs
 -- favorites: private to the owner who saved them.
 create policy "manage own favorites" on favorites
   for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+
+-- walker_blocked_dates: publicly readable (a booking owner needs to see a
+-- walker's blocked dates before submitting a request); only the walker
+-- themselves can add/remove their own.
+alter table walker_blocked_dates enable row level security;
+create policy "blocked dates are public" on walker_blocked_dates
+  for select using (true);
+create policy "manage own blocked dates" on walker_blocked_dates
+  for all using (walker_id = auth.uid()) with check (walker_id = auth.uid());
 
 -- area_interest: anyone (incl. anonymous) can leave interest; nobody can
 -- read it back via the API — deliberately no select policy.
@@ -267,6 +289,14 @@ begin
 
   if v_rate is null then
     raise exception 'walker not found or not approved';
+  end if;
+
+  if exists (
+    select 1 from walker_blocked_dates
+    where walker_id = p_walker_id
+      and blocked_date = (p_requested_time at time zone 'Asia/Jerusalem')::date
+  ) then
+    raise exception 'walker is not available on this date';
   end if;
 
   insert into bookings (owner_id, walker_id, dog_id, requested_time, duration_minutes, price_ils, owner_message)

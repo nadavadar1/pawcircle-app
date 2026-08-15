@@ -5,6 +5,10 @@ import { useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { DOG_SIZES } from "@/lib/constants";
 
+// Flip to true once the walker_blocked_dates table migration has been run
+// against the live database.
+const AVAILABILITY_FEATURE_ENABLED = false;
+
 type Dog = { id: string; name: string; size: string };
 
 export function BookingRequestForm({
@@ -27,6 +31,7 @@ export function BookingRequestForm({
   const [dogId, setDogId] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+  const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
   const [duration, setDuration] = useState(30);
   const [message, setMessage] = useState("");
   const [recurring, setRecurring] = useState(false);
@@ -53,6 +58,16 @@ export function BookingRequestForm({
     });
   }, [rebookDogId]);
 
+  useEffect(() => {
+    if (!AVAILABILITY_FEATURE_ENABLED) return;
+    const supabase = getSupabaseBrowserClient();
+    supabase
+      .from("walker_blocked_dates")
+      .select("blocked_date")
+      .eq("walker_id", walkerId)
+      .then(({ data }) => setBlockedDates(new Set((data ?? []).map((d) => d.blocked_date))));
+  }, [walkerId]);
+
   async function handleAddDog(e: FormEvent) {
     e.preventDefault();
     if (!userId) return;
@@ -75,9 +90,14 @@ export function BookingRequestForm({
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setSubmitting(true);
     setError(null);
 
+    if (AVAILABILITY_FEATURE_ENABLED && blockedDates.has(date)) {
+      setError("המטייל/ת לא זמין/ה בתאריך שנבחר. בחרו תאריך אחר.");
+      return;
+    }
+
+    setSubmitting(true);
     const supabase = getSupabaseBrowserClient();
     const baseTime = new Date(`${date}T${time}`);
     const occurrences = recurring ? weeks : 1;
@@ -170,6 +190,9 @@ export function BookingRequestForm({
         <input required type="date" value={date} onChange={(e) => setDate(e.target.value)} className="flex-1 rounded border border-line bg-paper-hi px-2 py-1.5 text-sm" />
         <input required type="time" value={time} onChange={(e) => setTime(e.target.value)} className="flex-1 rounded border border-line bg-paper-hi px-2 py-1.5 text-sm" />
       </div>
+      {AVAILABILITY_FEATURE_ENABLED && date && blockedDates.has(date) && (
+        <p className="text-xs text-rust">המטייל/ת לא זמין/ה בתאריך זה.</p>
+      )}
       <label className="flex items-center gap-2 text-sm">
         משך:
         <select value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="rounded border border-line bg-paper-hi px-2 py-1.5 text-sm">
