@@ -242,6 +242,9 @@ export default async function WalkerProfilePage({
             <li>✓ שם מלא ומספר טלפון אמיתיים — לא פרופיל אנונימי</li>
             <li>✓ ביקורות מבעלי כלבים אמיתיים מהשכונה</li>
             <li>✓ פרטי הקשר נחשפים רק אחרי שהבקשה מאושרת</li>
+            <li>
+              <Link href="/safety" className="underline hover:text-rust">איך אנחנו בונים אמון ←</Link>
+            </li>
           </ul>
         )}
 
