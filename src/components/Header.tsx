@@ -11,6 +11,8 @@ declare global {
   }
 }
 
+const ADMIN_EMAIL = "nadavadar1@gmail.com";
+
 export function Header() {
   const [email, setEmail] = useState<string | null | undefined>(undefined);
   const [pendingCount, setPendingCount] = useState(0);
@@ -92,6 +94,9 @@ export function Header() {
                 )}
               </Link>
               <Link href="/profile/edit" className="text-ink/70 hover:text-rust">הפרופיל שלי</Link>
+              {email === ADMIN_EMAIL && (
+                <Link href="/admin" className="text-ink/70 hover:text-rust">ניהול</Link>
+              )}
               <button onClick={signOut} className="text-rust hover:underline">
                 התנתקות
               </button>

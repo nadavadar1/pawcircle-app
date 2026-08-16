@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/dashboard", "/my-bookings", "/profile/edit", "/onboarding", "/auth/callback"],
+      disallow: ["/dashboard", "/my-bookings", "/profile/edit", "/onboarding", "/auth/callback", "/admin"],
     },
     sitemap: "https://pawcircle-app.vercel.app/sitemap.xml",
   };
