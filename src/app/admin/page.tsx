@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
-import { ApproveWalkerButton, ApproveIdVerificationButton } from "./ApproveButtons";
+import { PendingWalkerActions, ApproveIdVerificationButton, SuspendWalkerButton } from "./ApproveButtons";
 
 const ADMIN_EMAIL = "nadavadar1@gmail.com";
 
@@ -68,6 +68,16 @@ export default async function AdminPage() {
     namesById = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
   }
 
+  let approvedWalkerIds = new Set<string>();
+  if (reportUserIds.length > 0) {
+    const { data: walkerStatuses } = await admin
+      .from("walker_profiles")
+      .select("id, status")
+      .in("id", reportUserIds)
+      .eq("status", "approved");
+    approvedWalkerIds = new Set((walkerStatuses ?? []).map((w) => w.id));
+  }
+
   const idDocSignedUrls = new Map<string, string>();
   for (const doc of pendingIdDocs ?? []) {
     if (!doc.id_document_url) continue;
@@ -110,7 +120,7 @@ export default async function AdminPage() {
                 </div>
                 {w.bio && <p className="mb-1 text-sm text-ink/70">{w.bio}</p>}
                 <p className="mb-2 text-xs text-ink/60">{(w.service_areas ?? []).join(" · ")}</p>
-                <ApproveWalkerButton walkerId={w.id} />
+                <PendingWalkerActions walkerId={w.id} />
               </li>
             ))}
           </ul>
@@ -157,7 +167,8 @@ export default async function AdminPage() {
                   <span className="font-semibold text-ink">{namesById.get(r.reported_id) ?? "—"}</span>
                 </p>
                 <p className="mb-1 text-sm text-ink/80">{r.reason}</p>
-                <p className="text-xs text-ink/50">{new Date(r.created_at).toLocaleString("he-IL")}</p>
+                <p className="mb-2 text-xs text-ink/50">{new Date(r.created_at).toLocaleString("he-IL")}</p>
+                {approvedWalkerIds.has(r.reported_id) && <SuspendWalkerButton walkerId={r.reported_id} />}
               </li>
             ))}
           </ul>
