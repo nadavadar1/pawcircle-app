@@ -1,11 +1,26 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
+// In-app browsers (WhatsApp, Instagram, Facebook/Messenger, TikTok) run in a
+// stripped-down WebView that frequently breaks Google's OAuth redirect —
+// Google itself blocks or mishandles sign-in from these user agents. The
+// email-code flow doesn't depend on that redirect chain, so it's the
+// reliable fallback to point people at when one of these is detected.
+function useIsInAppBrowser() {
+  const [isInApp, setIsInApp] = useState(false);
+  useEffect(() => {
+    const ua = navigator.userAgent || "";
+    setIsInApp(/FBAN|FBAV|Instagram|WhatsApp|Line\/|MicroMessenger|TikTok/i.test(ua));
+  }, []);
+  return isInApp;
+}
+
 export default function LoginPage() {
   const router = useRouter();
+  const isInAppBrowser = useIsInAppBrowser();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [stage, setStage] = useState<"email" | "code">("email");
@@ -115,6 +130,13 @@ export default function LoginPage() {
       <p className="mb-6 text-sm text-ink/70">
         בלי סיסמה — עם Google בלחיצה אחת, או קוד קצר במייל.
       </p>
+
+      {isInAppBrowser && (
+        <p className="mb-4 rounded border border-brass/40 bg-brass/10 px-3 py-2 text-xs text-ink/80">
+          נראה שפתחתם את הדף מתוך אפליקציה אחרת (וואטסאפ/אינסטגרם וכו&apos;). התחברות עם Google לא תמיד
+          עובדת שם — אם היא נכשלת, השתמשו ב&quot;קוד קצר במייל&quot; למטה, זה תמיד עובד.
+        </p>
+      )}
 
       <button
         type="button"
