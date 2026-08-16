@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -142,10 +143,11 @@ export default async function WalkerProfilePage({
         <div className="p-6">
           <div className="mb-3 flex items-start gap-4">
             {profile.photo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={profile.photo_url}
                 alt=""
+                width={80}
+                height={80}
                 className="h-20 w-20 flex-shrink-0 rounded-full object-cover ring-2 ring-brass"
               />
             ) : (

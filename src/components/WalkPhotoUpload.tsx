@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export function WalkPhotoUpload({
@@ -66,8 +67,9 @@ export function WalkPhotoUpload({
   return (
     <div className="mt-2">
       {currentUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={currentUrl} alt="" className="mb-2 h-32 w-full rounded object-cover" />
+        <div className="relative mb-2 h-32 w-full overflow-hidden rounded">
+          <Image src={currentUrl} alt="" fill sizes="100vw" className="object-cover" />
+        </div>
       ) : null}
       <label className="inline-block cursor-pointer rounded border border-line px-3 py-1 text-xs font-semibold text-ink/80">
         {uploading ? "מעלה..." : currentUrl ? "החלפת תמונה מהטיול" : "הוספת תמונה מהטיול"}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { CITIES, SPECIALTIES, DOG_SIZES } from "@/lib/constants";
 import { ChipMultiSelect } from "@/components/ChipMultiSelect";
@@ -202,8 +203,13 @@ export default async function SearchPage({
                   <span title="במועדפים שלך" className="text-rust" aria-hidden="true">♥</span>
                 )}
                 {profile!.photo_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={profile!.photo_url} alt="" className="h-12 w-12 flex-shrink-0 rounded-full object-cover" />
+                  <Image
+                    src={profile!.photo_url}
+                    alt=""
+                    width={48}
+                    height={48}
+                    className="h-12 w-12 flex-shrink-0 rounded-full object-cover"
+                  />
                 ) : (
                   <div className="h-12 w-12 flex-shrink-0 rounded-full bg-line" />
                 )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export function PhotoUpload({
@@ -54,8 +55,7 @@ export function PhotoUpload({
   return (
     <div className="flex items-center gap-3">
       {currentUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={currentUrl} alt="" className="h-16 w-16 rounded-full object-cover" />
+        <Image src={currentUrl} alt="" width={64} height={64} className="h-16 w-16 rounded-full object-cover" />
       ) : (
         <div className="h-16 w-16 rounded-full bg-line" />
       )}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { CITIES, SPECIALTIES, DOG_SIZES } from "@/lib/constants";
 import { Loading } from "@/components/Loading";
@@ -147,8 +148,7 @@ export default function OnboardingPage() {
 
         {photoUrl && (
           <div className="flex items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={photoUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
+            <Image src={photoUrl} alt="" width={48} height={48} className="h-12 w-12 rounded-full object-cover" />
             {photoFromGoogle && (
               <p className="text-xs text-ink/60">תמונה ושם מולאו מהחשבון שלך ב-Google</p>
             )}

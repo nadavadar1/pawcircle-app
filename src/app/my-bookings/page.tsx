@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { ReviewForm } from "@/components/ReviewForm";
 import { Loading } from "@/components/Loading";
@@ -161,8 +162,9 @@ export default function MyBookingsPage() {
               <BookingStatusTimeline status={b.status} />
 
               {b.walk_photo_url && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={b.walk_photo_url} alt="" className="mt-2 h-40 w-full rounded object-cover" />
+                <div className="relative mt-2 h-40 w-full overflow-hidden rounded">
+                  <Image src={b.walk_photo_url} alt="" fill sizes="100vw" className="object-cover" />
+                </div>
               )}
 
               <div className="mt-2 flex flex-wrap gap-2">
