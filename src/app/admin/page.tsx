@@ -20,7 +20,17 @@ export default async function AdminPage() {
 
   const admin = getSupabaseAdminClient();
 
-  const [{ data: pendingWalkers }, { data: pendingIdDocs }, { data: reports }, { data: leads }] = await Promise.all([
+  const [
+    { data: pendingWalkers },
+    { data: pendingIdDocs },
+    { data: reports },
+    { data: leads },
+    { count: approvedWalkersCount },
+    { count: ownersCount },
+    { count: bookingsCount },
+    { count: completedBookingsCount },
+    { count: reviewsCount },
+  ] = await Promise.all([
     admin
       .from("walker_profiles")
       .select("id, bio, hourly_rate_ils, service_areas, created_at")
@@ -41,6 +51,11 @@ export default async function AdminPage() {
       .select("email, areas, created_at")
       .order("created_at", { ascending: false })
       .limit(20),
+    admin.from("walker_profiles").select("id", { count: "exact", head: true }).eq("status", "approved"),
+    admin.from("profiles").select("id", { count: "exact", head: true }).in("role", ["owner", "both"]),
+    admin.from("bookings").select("id", { count: "exact", head: true }),
+    admin.from("bookings").select("id", { count: "exact", head: true }).eq("status", "completed"),
+    admin.from("reviews").select("id", { count: "exact", head: true }),
   ]);
 
   const walkerIds = (pendingWalkers ?? []).map((w) => w.id);
@@ -63,6 +78,21 @@ export default async function AdminPage() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
       <h1 className="mb-6 text-2xl font-bold text-pine">ניהול</h1>
+
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-5">
+        {[
+          { label: "מטיילים מאושרים", value: approvedWalkersCount ?? 0 },
+          { label: "בעלי כלבים", value: ownersCount ?? 0 },
+          { label: "בקשות הליכה", value: bookingsCount ?? 0 },
+          { label: "הליכות שהושלמו", value: completedBookingsCount ?? 0 },
+          { label: "ביקורות", value: reviewsCount ?? 0 },
+        ].map((s) => (
+          <div key={s.label} className="rounded border border-line bg-paper-hi p-3 text-center">
+            <p className="font-[var(--font-mono)] text-2xl font-bold text-pine">{s.value}</p>
+            <p className="text-xs text-ink/60">{s.label}</p>
+          </div>
+        ))}
+      </div>
 
       <section className="mb-8">
         <h2 className="mb-3 text-lg font-bold text-pine">
