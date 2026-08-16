@@ -78,7 +78,7 @@ export function Header() {
   return (
     <header className="border-b border-line bg-paper-hi">
       <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-3">
-        <Link href="/" className="flex items-center gap-2 font-[var(--font-display)] text-lg font-bold text-ink">
+        <Link href="/" dir="ltr" className="flex items-center gap-2 font-[var(--font-display)] text-lg font-bold text-ink">
           <Image src="/logo.jpg" alt="" width={32} height={32} className="rounded-md" />
           Paw<span className="text-rust">Circle</span>
         </Link>
