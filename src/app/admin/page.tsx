@@ -85,6 +85,19 @@ export default async function AdminPage() {
     if (data?.signedUrl) idDocSignedUrls.set(doc.id, data.signedUrl);
   }
 
+  // Confirmed auth accounts with no matching profiles row: people who
+  // verified their email/Google sign-in but never made it through
+  // onboarding — e.g. the emailRedirectTo bug that stranded users before
+  // the /onboarding safety-net redirect existed.
+  const [{ data: authUsersPage }, { data: allProfiles }] = await Promise.all([
+    admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    admin.from("profiles").select("id"),
+  ]);
+  const profileIdSet = new Set((allProfiles ?? []).map((p) => p.id));
+  const stuckUsers = (authUsersPage?.users ?? [])
+    .filter((u) => u.email_confirmed_at && !profileIdSet.has(u.id))
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
       <h1 className="mb-6 text-2xl font-bold text-pine">ניהול</h1>
@@ -172,6 +185,31 @@ export default async function AdminPage() {
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      <section className="mb-8">
+        <h2 className="mb-3 text-lg font-bold text-pine">
+          משתמשים תקועים {stuckUsers.length > 0 && `(${stuckUsers.length})`}
+        </h2>
+        {stuckUsers.length === 0 ? (
+          <p className="text-sm text-ink/60">אין משתמשים תקועים כרגע — כולם עם חשבון מאומת השלימו רישום פרופיל.</p>
+        ) : (
+          <>
+            <p className="mb-2 text-xs text-ink/60">
+              אימתו מייל/Google אבל אף פעם לא השלימו את הפרופיל. שווה לפנות אליהם ישירות.
+            </p>
+            <ul className="flex flex-col gap-2">
+              {stuckUsers.map((u) => (
+                <li key={u.id} className="rounded border border-rust/30 bg-rust/5 p-3 text-sm">
+                  <span className="font-semibold text-ink" dir="ltr">{u.email}</span>
+                  <span className="mr-2 text-xs text-ink/40">
+                    נרשמ/ה {new Date(u.created_at).toLocaleDateString("he-IL")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </section>
 

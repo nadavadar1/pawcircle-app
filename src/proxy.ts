@@ -7,6 +7,28 @@ import { NextResponse, type NextRequest } from "next/server";
  * Server Components always see a valid session without each of them having
  * to handle token refresh themselves.
  */
+
+// Paths a signed-in user without a profile row is still allowed to reach.
+// Everything else assumes onboarding has completed. This is the safety net
+// for the emailRedirectTo bug that once stranded confirmed users with no
+// profile: whatever page they land on, they get bounced to /onboarding
+// instead of silently stuck.
+const SKIP_PROFILE_CHECK_PREFIXES = [
+  "/onboarding",
+  "/auth/callback",
+  "/login",
+  "/admin",
+  "/terms",
+  "/privacy",
+  "/safety",
+  "/api/",
+  "/sitemap.xml",
+  "/robots.txt",
+  "/manifest.webmanifest",
+  "/opengraph-image",
+  "/icon.png",
+];
+
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -32,7 +54,24 @@ export async function proxy(request: NextRequest) {
   });
 
   // Touch the session so an expired token gets refreshed and rewritten.
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const pathname = request.nextUrl.pathname;
+  const skip = SKIP_PROFILE_CHECK_PREFIXES.some((p) => pathname.startsWith(p));
+
+  if (user && !skip) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (!profile) {
+      return NextResponse.redirect(new URL("/onboarding", request.url));
+    }
+  }
 
   return response;
 }
