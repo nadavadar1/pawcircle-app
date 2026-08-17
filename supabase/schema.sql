@@ -143,6 +143,15 @@ create table push_subscriptions (
 );
 create index on push_subscriptions (user_id);
 
+-- Tracks who already received the automated "finish signing up" reminder
+-- (confirmed or not, but no profiles row after a grace period), so the daily
+-- cron job never nudges the same person twice.
+create table stuck_user_nudges (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  email text not null,
+  sent_at timestamptz not null default now()
+);
+
 -- A user flagging another user's behavior, optionally tied to a specific
 -- booking. Private: no select policy, only the service role (dashboard)
 -- can read it, same pattern as area_interest.
@@ -252,6 +261,10 @@ create policy "authenticated users can report" on reports
 alter table push_subscriptions enable row level security;
 create policy "manage own push subscriptions" on push_subscriptions
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- stuck_user_nudges: deliberately no policies — only the service role (the
+-- nudge-stuck-users cron route) ever reads or writes this table.
+alter table stuck_user_nudges enable row level security;
 
 -- walker_profiles: approved walkers are publicly visible; a walker always
 -- sees their own row (e.g. while still pending_review). `status` is
