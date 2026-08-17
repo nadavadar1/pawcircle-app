@@ -31,9 +31,16 @@ export default function LoginPage() {
 
   // Someone already signed in (e.g. they clicked a "log in" link while
   // still authenticated from an earlier visit) should never see the login
-  // form again — send them straight to onboarding or search instead.
-  // Without this, re-authenticating via Google mid-session also silently
-  // breaks: the OAuth round-trip completes but nothing on this page reacts.
+  // form again — send them straight onward instead. Without this,
+  // re-authenticating via Google mid-session also silently breaks: the
+  // OAuth round-trip completes but nothing on this page reacts.
+  //
+  // Where "onward" means depends on what they already have: no profile at
+  // all means onboarding was never finished; a walker profile means there's
+  // nothing left to register, so the dashboard is more useful than a search
+  // page that looks like it did nothing; owner-only means the walker
+  // sign-up they may have clicked through for still needs a destination —
+  // profile/edit has that upgrade action.
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
     supabase.auth.getUser().then(async ({ data }) => {
@@ -41,12 +48,15 @@ export default function LoginPage() {
         setCheckingSession(false);
         return;
       }
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("id", data.user.id)
-        .maybeSingle();
-      router.replace(profile ? "/search" : "/onboarding");
+      const [{ data: profile }, { data: walkerProfile }] = await Promise.all([
+        supabase.from("profiles").select("id").eq("id", data.user.id).maybeSingle(),
+        supabase.from("walker_profiles").select("id").eq("id", data.user.id).maybeSingle(),
+      ]);
+      if (!profile) {
+        router.replace("/onboarding");
+        return;
+      }
+      router.replace(walkerProfile ? "/dashboard" : "/profile/edit");
     });
   }, [router]);
 
