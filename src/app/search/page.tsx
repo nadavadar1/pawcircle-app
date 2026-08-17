@@ -143,6 +143,18 @@ export default async function SearchPage({
         </p>
       </div>
 
+      <div className="mb-8 flex flex-col items-center justify-between gap-3 rounded-lg border border-brass/40 bg-brass/10 px-5 py-4 sm:flex-row">
+        <p className="text-sm font-semibold text-ink">
+          🐾 אוהבים כלבים ורוצים להרוויח מהליכות? אפשר להירשם כמטיילים בדיוק כאן.
+        </p>
+        <Link
+          href="/login"
+          className="flex-shrink-0 rounded bg-brass px-4 py-2 text-sm font-bold text-ink hover:bg-brass-hi"
+        >
+          הצטרפות כמטייל/ת
+        </Link>
+      </div>
+
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[
           { step: "1", text: "מחפשים מטייל/ת לפי אזור, תקציב וגודל הכלב" },
