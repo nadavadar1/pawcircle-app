@@ -7,6 +7,10 @@ import { PendingWalkerActions, ApproveIdVerificationButton, SuspendWalkerButton 
 const ADMIN_EMAIL = "nadavadar1@gmail.com";
 
 export const metadata: Metadata = { title: "ניהול | PawCircle" };
+// Every stat here (pending walkers, stuck users, reports...) must reflect the
+// current moment, never a cached snapshot — an admin checking this page
+// mid-signup-wave needs live numbers.
+export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   const supabase = await getSupabaseServerClient();
