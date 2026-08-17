@@ -5,7 +5,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 // treated as abandoned rather than "still mid-flow" — short enough that a
 // real reminder still feels timely, long enough not to nag someone who's
 // simply still filling out the onboarding form.
-const GRACE_PERIOD_MS = 2 * 60 * 60 * 1000;
+const GRACE_PERIOD_MS = 5 * 1000; // TEMP: shortened for live E2E test, reverted right after
 
 const RESEND_API_URL = "https://api.resend.com/emails";
 
