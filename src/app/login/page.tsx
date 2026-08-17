@@ -3,6 +3,7 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { Loading } from "@/components/Loading";
 
 // In-app browsers (WhatsApp, Instagram, Facebook/Messenger, TikTok) run in a
 // stripped-down WebView that frequently breaks Google's OAuth redirect —
@@ -26,6 +27,30 @@ export default function LoginPage() {
   const [stage, setStage] = useState<"email" | "code">("email");
   const [status, setStatus] = useState<"idle" | "busy" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  // Someone already signed in (e.g. they clicked a "log in" link while
+  // still authenticated from an earlier visit) should never see the login
+  // form again — send them straight to onboarding or search instead.
+  // Without this, re-authenticating via Google mid-session also silently
+  // breaks: the OAuth round-trip completes but nothing on this page reacts.
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) {
+        setCheckingSession(false);
+        return;
+      }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      router.replace(profile ? "/search" : "/onboarding");
+    });
+  }, [router]);
+
+  if (checkingSession) return <Loading />;
 
   async function sendCode(e: FormEvent) {
     e.preventDefault();
