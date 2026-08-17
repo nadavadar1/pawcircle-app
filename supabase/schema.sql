@@ -152,6 +152,18 @@ create table stuck_user_nudges (
   sent_at timestamptz not null default now()
 );
 
+-- A logged-in user flagging a problem with the app itself (not another
+-- user — that's `reports`). Shows up in /admin so the founder sees it there
+-- instead of relying on people finding him on WhatsApp.
+create table support_messages (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  message text not null check (char_length(message) > 0),
+  resolved boolean not null default false,
+  created_at timestamptz not null default now()
+);
+create index on support_messages (resolved, created_at);
+
 -- A user flagging another user's behavior, optionally tied to a specific
 -- booking. Private: no select policy, only the service role (dashboard)
 -- can read it, same pattern as area_interest.
@@ -265,6 +277,13 @@ create policy "manage own push subscriptions" on push_subscriptions
 -- stuck_user_nudges: deliberately no policies — only the service role (the
 -- nudge-stuck-users cron route) ever reads or writes this table.
 alter table stuck_user_nudges enable row level security;
+
+-- support_messages: any authenticated user can submit one about themselves;
+-- nobody can read it back via the API — deliberately no select policy, same
+-- pattern as reports. The founder reads/resolves it from /admin (service role).
+alter table support_messages enable row level security;
+create policy "authenticated users can submit support messages" on support_messages
+  for insert with check (user_id = auth.uid());
 
 -- walker_profiles: approved walkers are publicly visible; a walker always
 -- sees their own row (e.g. while still pending_review). `status` is

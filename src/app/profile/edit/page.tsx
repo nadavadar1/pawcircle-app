@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { CITIES, SPECIALTIES, DOG_SIZES } from "@/lib/constants";
 import { ChipMultiSelect } from "@/components/ChipMultiSelect";
@@ -356,6 +357,12 @@ export default function ProfileEditPage() {
           />
         </div>
       )}
+
+      <div className="mt-10 text-center">
+        <Link href="/help" className="text-sm text-ink/50 underline hover:text-rust">
+          יש בעיה? ספרו לנו
+        </Link>
+      </div>
     </main>
   );
 }

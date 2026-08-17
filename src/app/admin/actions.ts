@@ -54,3 +54,11 @@ export async function suspendWalker(walkerId: string) {
   if (error) throw new Error(error.message);
   revalidatePath("/admin");
 }
+
+export async function resolveSupportMessage(messageId: string) {
+  await assertIsAdmin();
+  const admin = getSupabaseAdminClient();
+  const { error } = await admin.from("support_messages").update({ resolved: true }).eq("id", messageId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin");
+}

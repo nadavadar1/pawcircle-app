@@ -2,7 +2,12 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
-import { PendingWalkerActions, ApproveIdVerificationButton, SuspendWalkerButton } from "./ApproveButtons";
+import {
+  PendingWalkerActions,
+  ApproveIdVerificationButton,
+  SuspendWalkerButton,
+  ResolveSupportMessageButton,
+} from "./ApproveButtons";
 
 const ADMIN_EMAIL = "nadavadar1@gmail.com";
 
@@ -28,6 +33,7 @@ export default async function AdminPage() {
     { data: pendingWalkers },
     { data: pendingIdDocs },
     { data: reports },
+    { data: supportMessages },
     { data: leads },
     { count: approvedWalkersCount },
     { count: ownersCount },
@@ -51,6 +57,11 @@ export default async function AdminPage() {
       .order("created_at", { ascending: false })
       .limit(20),
     admin
+      .from("support_messages")
+      .select("id, user_id, message, created_at")
+      .eq("resolved", false)
+      .order("created_at", { ascending: false }),
+    admin
       .from("area_interest")
       .select("email, areas, created_at")
       .order("created_at", { ascending: false })
@@ -64,7 +75,8 @@ export default async function AdminPage() {
 
   const walkerIds = (pendingWalkers ?? []).map((w) => w.id);
   const reportUserIds = [...new Set((reports ?? []).flatMap((r) => [r.reporter_id, r.reported_id]))];
-  const nameLookupIds = [...new Set([...walkerIds, ...reportUserIds])];
+  const supportUserIds = [...new Set((supportMessages ?? []).map((m) => m.user_id))];
+  const nameLookupIds = [...new Set([...walkerIds, ...reportUserIds, ...supportUserIds])];
 
   let namesById = new Map<string, string>();
   if (nameLookupIds.length > 0) {
@@ -186,6 +198,26 @@ export default async function AdminPage() {
                 <p className="mb-1 text-sm text-ink/80">{r.reason}</p>
                 <p className="mb-2 text-xs text-ink/50">{new Date(r.created_at).toLocaleString("he-IL")}</p>
                 {approvedWalkerIds.has(r.reported_id) && <SuspendWalkerButton walkerId={r.reported_id} />}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="mb-8">
+        <h2 className="mb-3 text-lg font-bold text-pine">
+          פניות תמיכה {supportMessages && supportMessages.length > 0 && `(${supportMessages.length})`}
+        </h2>
+        {!supportMessages || supportMessages.length === 0 ? (
+          <p className="text-sm text-ink/60">אין פניות פתוחות.</p>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {supportMessages.map((m) => (
+              <li key={m.id} className="rounded border border-rust/30 bg-rust/5 p-4">
+                <p className="mb-1 text-sm font-semibold text-ink">{namesById.get(m.user_id) ?? "—"}</p>
+                <p className="mb-2 whitespace-pre-wrap text-sm text-ink/80">{m.message}</p>
+                <p className="mb-2 text-xs text-ink/50">{new Date(m.created_at).toLocaleString("he-IL")}</p>
+                <ResolveSupportMessageButton messageId={m.id} />
               </li>
             ))}
           </ul>

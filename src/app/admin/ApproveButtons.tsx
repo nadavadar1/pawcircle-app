@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { approveWalker, rejectWalker, approveIdVerification, suspendWalker } from "./actions";
+import { approveWalker, rejectWalker, approveIdVerification, suspendWalker, resolveSupportMessage } from "./actions";
 
 export function PendingWalkerActions({ walkerId }: { walkerId: string }) {
   const [pending, startTransition] = useTransition();
@@ -68,6 +68,38 @@ export function ApproveIdVerificationButton({ userId }: { userId: string }) {
         className="rounded bg-brass px-3 py-1.5 text-sm font-bold text-ink disabled:opacity-60"
       >
         {pending ? "מאשר..." : "אישור זהות"}
+      </button>
+      {error && <p className="mt-1 text-xs text-rust">{error}</p>}
+    </div>
+  );
+}
+
+export function ResolveSupportMessageButton({ messageId }: { messageId: string }) {
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  if (done) return <p className="text-xs font-semibold text-sage">טופל ✓</p>;
+
+  return (
+    <div>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() =>
+          startTransition(async () => {
+            setError(null);
+            try {
+              await resolveSupportMessage(messageId);
+              setDone(true);
+            } catch {
+              setError("הפעולה נכשלה, נסה שוב.");
+            }
+          })
+        }
+        className="rounded border border-line px-3 py-1 text-xs font-semibold text-ink/70 hover:border-rust hover:text-rust disabled:opacity-60"
+      >
+        {pending ? "מסמן..." : "סמן כטופל"}
       </button>
       {error && <p className="mt-1 text-xs text-rust">{error}</p>}
     </div>
