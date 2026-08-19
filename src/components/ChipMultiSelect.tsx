@@ -66,7 +66,11 @@ export function ChipMultiSelect({
         />
       )}
       {searchable && visible.length === 0 && (
-        <p className="text-xs text-ink/40">התחילו להקליד כדי לראות אפשרויות</p>
+        <p className="text-xs text-ink/40">
+          {query.length > 0
+            ? `אין התאמה ל"${query}" — נסו לפי שם עיר או שכונה, למשל "תל אביב"`
+            : "התחילו להקליד כדי לראות אפשרויות"}
+        </p>
       )}
       <div className="flex flex-wrap gap-1.5">
         {visible.map((opt) => (
