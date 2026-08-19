@@ -218,13 +218,16 @@ export function BookingRequestForm({
           (≈{Math.round((hourlyRate * duration) / 60)} ₪)
         </span>
       </label>
-      <textarea
-        placeholder="הודעה קצרה למטייל/ת (אופציונלי)"
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        rows={2}
-        className="rounded border border-line bg-paper-hi px-2 py-1.5 text-sm"
-      />
+      <label className="flex flex-col gap-1 text-xs font-semibold">
+        מיקום מפגש, פרטים נוספים או כל דבר מיוחד (אופציונלי)
+        <textarea
+          placeholder="למשל: פינת אבן גבירול/ארלוזורוב, יש לי 2 כלבים, צריך 2 טיולים ביום..."
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          rows={2}
+          className="rounded border border-line bg-paper-hi px-2 py-1.5 text-sm font-normal"
+        />
+      </label>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={recurring} onChange={(e) => setRecurring(e.target.checked)} />
         הליכה קבועה (כל שבוע, באותו יום ושעה)
