@@ -35,14 +35,37 @@ export async function GET(request: NextRequest) {
 
   const admin = getSupabaseAdminClient();
 
-  const [{ data: authUsersPage }, { data: allProfiles }, { data: nudged }] = await Promise.all([
+  const [usersResult, profilesResult, nudgedResult] = await Promise.all([
     admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
     admin.from("profiles").select("id"),
     admin.from("stuck_user_nudges").select("user_id"),
   ]);
 
-  const profileIds = new Set((allProfiles ?? []).map((p) => p.id));
-  const nudgedIds = new Set((nudged ?? []).map((n) => n.user_id));
+  // A failed query must never be treated as "zero rows" here: that silently
+  // turns into "nobody has a profile", which means every real registered
+  // user looks stranded and gets a false "you never finished signing up"
+  // email. Abort the whole run instead of guessing.
+  const queryError = usersResult.error || profilesResult.error || nudgedResult.error;
+  if (queryError) {
+    return NextResponse.json({ error: "query failed, aborting", detail: queryError.message }, { status: 500 });
+  }
+
+  const authUsersPage = usersResult.data;
+  const allProfiles = profilesResult.data ?? [];
+  const nudged = nudgedResult.data ?? [];
+
+  // Second line of defense: a real production run with real auth users but
+  // zero profiles is implausible and almost certainly means something
+  // upstream returned bad data despite reporting no error.
+  if (allProfiles.length === 0 && (authUsersPage?.users?.length ?? 0) > 5) {
+    return NextResponse.json(
+      { error: "profiles query returned zero rows against a non-trivial user base, aborting as a precaution" },
+      { status: 500 }
+    );
+  }
+
+  const profileIds = new Set(allProfiles.map((p) => p.id));
+  const nudgedIds = new Set(nudged.map((n) => n.user_id));
   const cutoff = Date.now() - GRACE_PERIOD_MS;
 
   const targets = (authUsersPage?.users ?? []).filter(
