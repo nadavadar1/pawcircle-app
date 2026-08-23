@@ -32,7 +32,7 @@ export function BookingRequestForm({
   const [dogSize, setDogSize] = useState<string>(DOG_SIZES[0]);
   const [addingDog, setAddingDog] = useState(false);
 
-  const [dogId, setDogId] = useState("");
+  const [selectedDogIds, setSelectedDogIds] = useState<string[]>([]);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
@@ -57,7 +57,7 @@ export function BookingRequestForm({
       setDogs(dogsData ?? []);
       if (dogsData && dogsData.length > 0) {
         const preselect = rebookDogId && dogsData.some((d) => d.id === rebookDogId) ? rebookDogId : dogsData[0].id;
-        setDogId(preselect);
+        setSelectedDogIds([preselect]);
       }
     });
   }, [rebookDogId]);
@@ -89,12 +89,23 @@ export function BookingRequestForm({
       return;
     }
     setDogs((prev) => [...(prev ?? []), data]);
-    setDogId(data.id);
+    setSelectedDogIds((prev) => [...prev, data.id]);
+  }
+
+  function toggleDog(id: string) {
+    setSelectedDogIds((prev) =>
+      prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]
+    );
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (selectedDogIds.length === 0) {
+      setError("בחרו לפחות כלב אחד.");
+      return;
+    }
 
     if (AVAILABILITY_FEATURE_ENABLED && blockedDates.has(date)) {
       setError("המטייל/ת לא זמין/ה בתאריך שנבחר. בחרו תאריך אחר.");
@@ -105,29 +116,34 @@ export function BookingRequestForm({
     const supabase = getSupabaseBrowserClient();
     const baseTime = new Date(`${date}T${time}`);
     const occurrences = recurring ? weeks : 1;
+    const totalRequests = occurrences * selectedDogIds.length;
 
     let succeeded = 0;
     let firstBookingId: string | null = null;
     for (let i = 0; i < occurrences; i++) {
       const requestedTime = new Date(baseTime.getTime() + i * 7 * 24 * 60 * 60 * 1000).toISOString();
-      const { data: newBookingId, error: rpcError } = await supabase.rpc("create_booking_request", {
-        p_walker_id: walkerId,
-        p_dog_id: dogId,
-        p_requested_time: requestedTime,
-        p_duration_minutes: duration,
-        p_owner_message: message || null,
-      });
-      if (rpcError) {
-        setSubmitting(false);
-        if (succeeded > 0) {
-          setError(`נשלחו ${succeeded} מתוך ${occurrences} בקשות. הבקשה הבאה נכשלה: ${rpcError.message}`);
-        } else {
-          setError(rpcError.message);
+      // Same slot, one request per selected dog — mirrors the recurring
+      // loop above exactly, just looping dogs instead of weeks.
+      for (const dogId of selectedDogIds) {
+        const { data: newBookingId, error: rpcError } = await supabase.rpc("create_booking_request", {
+          p_walker_id: walkerId,
+          p_dog_id: dogId,
+          p_requested_time: requestedTime,
+          p_duration_minutes: duration,
+          p_owner_message: message || null,
+        });
+        if (rpcError) {
+          setSubmitting(false);
+          if (succeeded > 0) {
+            setError(`נשלחו ${succeeded} מתוך ${totalRequests} בקשות. הבקשה הבאה נכשלה: ${rpcError.message}`);
+          } else {
+            setError(rpcError.message);
+          }
+          return;
         }
-        return;
+        if (!firstBookingId) firstBookingId = newBookingId as string;
+        succeeded++;
       }
-      if (!firstBookingId) firstBookingId = newBookingId as string;
-      succeeded++;
     }
 
     if (PUSH_FEATURE_ENABLED && firstBookingId) {
@@ -194,11 +210,25 @@ export function BookingRequestForm({
     <form onSubmit={handleSubmit} className="flex flex-col gap-2 rounded border border-line bg-paper p-3">
       <p className="text-sm font-semibold text-pine">בקשת הליכה</p>
       {dogs.length > 1 && (
-        <select value={dogId} onChange={(e) => setDogId(e.target.value)} className="rounded border border-line bg-paper-hi px-2 py-1.5 text-sm">
-          {dogs.map((d) => (
-            <option key={d.id} value={d.id}>{d.name}</option>
-          ))}
-        </select>
+        <fieldset>
+          <legend className="mb-1.5 text-xs font-semibold">לאיזה כלב/ים (אפשר כמה)</legend>
+          <div className="flex flex-wrap gap-1.5">
+            {dogs.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                onClick={() => toggleDog(d.id)}
+                className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                  selectedDogIds.includes(d.id)
+                    ? "border-brass bg-brass text-ink"
+                    : "border-line bg-paper text-ink/70 hover:border-brass"
+                }`}
+              >
+                {d.name}
+              </button>
+            ))}
+          </div>
+        </fieldset>
       )}
       <div className="flex gap-2">
         <input required type="date" value={date} onChange={(e) => setDate(e.target.value)} className="flex-1 rounded border border-line bg-paper-hi px-2 py-1.5 text-sm" />
@@ -247,7 +277,11 @@ export function BookingRequestForm({
         disabled={submitting}
         className="rounded bg-brass px-3 py-1.5 text-sm font-bold text-ink disabled:opacity-60"
       >
-        {submitting ? "שולח..." : recurring ? `שליחת ${weeks} בקשות` : "שליחת בקשה"}
+        {submitting
+          ? "שולח..."
+          : recurring || selectedDogIds.length > 1
+            ? `שליחת ${(recurring ? weeks : 1) * selectedDogIds.length} בקשות`
+            : "שליחת בקשה"}
       </button>
       {error && <p className="text-xs text-rust">{error}</p>}
     </form>

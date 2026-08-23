@@ -10,6 +10,7 @@ import { Loading } from "@/components/Loading";
 import { BookingStatusBadge, statusBorderClass } from "@/components/BookingStatusBadge";
 import { BookingStatusTimeline } from "@/components/BookingStatusTimeline";
 import { ReportButton } from "@/components/ReportButton";
+import { WhatsAppShareButton } from "@/components/WhatsAppShareButton";
 
 // Flip to true once the reports table migration has been run against the
 // live database.
@@ -38,6 +39,7 @@ const STATUS_LABEL: Record<string, string> = {
 export default function MyBookingsPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [walkerNames, setWalkerNames] = useState<Map<string, string>>(new Map());
   const [dogNames, setDogNames] = useState<Map<string, string>>(new Map());
@@ -53,6 +55,7 @@ export default function MyBookingsPage() {
       router.replace("/login");
       return;
     }
+    setUserId(userData.user.id);
 
     const { data: bookingsData } = await supabase
       .from("bookings")
@@ -227,7 +230,20 @@ export default function MyBookingsPage() {
 
               {b.status === "completed" && (
                 reviewedBookingIds.has(b.id) ? (
-                  <p className="mt-2 text-sm text-sage">תודה על הביקורת! ✓</p>
+                  <div className="mt-2 flex flex-col gap-2">
+                    <p className="text-sm text-sage">תודה על הביקורת! ✓</p>
+                    {userId && (
+                      <div className="rounded border border-line bg-paper p-3">
+                        <p className="mb-2 text-sm font-semibold text-pine">
+                          היה מעולה? שתפו עם מי שגם צריך/ה מטייל/ת 🐾
+                        </p>
+                        <WhatsAppShareButton
+                          text="גיליתי אפליקציה למטיילי כלבים עם שם אמיתי וביקורות מהקהילה — PawCircle:"
+                          url={`https://pawcircle-app.vercel.app/?ref=${userId}`}
+                        />
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <ReviewForm
                     walkerId={b.walker_id}

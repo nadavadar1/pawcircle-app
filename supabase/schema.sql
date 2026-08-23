@@ -160,6 +160,13 @@ create table booking_completion_reminders (
   sent_at timestamptz not null default now()
 );
 
+-- Tracks which still-unanswered requests already nudged the walker, so the
+-- daily cron never reminds about the same booking twice.
+create table booking_response_reminders (
+  booking_id uuid primary key references bookings(id) on delete cascade,
+  sent_at timestamptz not null default now()
+);
+
 -- A logged-in user flagging a problem with the app itself (not another
 -- user — that's `reports`). Shows up in /admin so the founder sees it there
 -- instead of relying on people finding him on WhatsApp.
@@ -296,6 +303,10 @@ create policy "authenticated users can submit support messages" on support_messa
 -- booking_completion_reminders: deliberately no policies — only the service
 -- role (the remind-mark-completed cron route) ever reads or writes this.
 alter table booking_completion_reminders enable row level security;
+
+-- booking_response_reminders: deliberately no policies — only the service
+-- role (the remind-unanswered-requests cron route) ever reads or writes this.
+alter table booking_response_reminders enable row level security;
 
 -- walker_profiles: approved walkers are publicly visible; a walker always
 -- sees their own row (e.g. while still pending_review). `status` is

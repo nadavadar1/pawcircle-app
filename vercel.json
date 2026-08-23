@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/remind-mark-completed",
       "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/remind-unanswered-requests",
+      "schedule": "0 12 * * *"
     }
   ]
 }
