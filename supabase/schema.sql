@@ -45,6 +45,7 @@ create table walker_profiles (
   video_url text,
   available_now boolean not null default true,
   status text not null check (status in ('pending_review','approved','paused')) default 'pending_review',
+  auto_accept_returning boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -322,7 +323,7 @@ create policy "update own walker profile" on walker_profiles
   for update using (id = auth.uid());
 
 revoke update on walker_profiles from anon, authenticated;
-grant update (bio, hourly_rate_ils, service_areas, dog_size_compatibility, specialties, years_experience, video_url, available_now) on walker_profiles to anon, authenticated;
+grant update (bio, hourly_rate_ils, service_areas, dog_size_compatibility, specialties, years_experience, video_url, available_now, auto_accept_returning) on walker_profiles to anon, authenticated;
 
 -- bookings: both parties can see their own bookings. No direct client
 -- INSERT/UPDATE — writes only via the RPCs below (price is server-computed,
@@ -358,6 +359,11 @@ begin
 end;
 $$;
 
+-- Returns (booking_id, booking_status) rather than a bare uuid so the
+-- caller knows whether the booking landed as 'requested' or was
+-- auto-accepted (see auto_accept_returning below) without a second query.
+drop function if exists create_booking_request(uuid, uuid, timestamptz, integer, text);
+
 create or replace function create_booking_request(
   p_walker_id uuid,
   p_dog_id uuid,
@@ -365,20 +371,22 @@ create or replace function create_booking_request(
   p_duration_minutes integer,
   p_owner_message text default null
 )
-returns uuid
+returns table (booking_id uuid, booking_status text)
 language plpgsql
 security definer
 as $$
 declare
   v_owner_id uuid := auth.uid();
   v_rate integer;
-  v_booking_id uuid;
+  v_auto_accept boolean;
+  v_status text := 'requested';
+  v_new_id uuid;
 begin
   if not exists (select 1 from dogs where id = p_dog_id and owner_id = v_owner_id) then
     raise exception 'dog does not belong to caller';
   end if;
 
-  select hourly_rate_ils into v_rate
+  select hourly_rate_ils, auto_accept_returning into v_rate, v_auto_accept
   from walker_profiles where id = p_walker_id and status = 'approved';
 
   if v_rate is null then
@@ -393,12 +401,23 @@ begin
     raise exception 'walker is not available on this date';
   end if;
 
-  insert into bookings (owner_id, walker_id, dog_id, requested_time, duration_minutes, price_ils, owner_message)
-  values (v_owner_id, p_walker_id, p_dog_id, p_requested_time, p_duration_minutes,
-          round(v_rate * p_duration_minutes / 60.0), p_owner_message)
-  returning id into v_booking_id;
+  -- A returning owner (a prior completed booking with this exact walker)
+  -- skips the pending-review step when the walker has opted into it —
+  -- the walker has already vetted this specific person once.
+  if v_auto_accept and exists (
+    select 1 from bookings
+    where owner_id = v_owner_id and walker_id = p_walker_id and status = 'completed'
+  ) then
+    v_status := 'accepted';
+  end if;
 
-  return v_booking_id;
+  insert into bookings (owner_id, walker_id, dog_id, requested_time, duration_minutes, price_ils, owner_message, status, responded_at)
+  values (v_owner_id, p_walker_id, p_dog_id, p_requested_time, p_duration_minutes,
+          round(v_rate * p_duration_minutes / 60.0), p_owner_message, v_status,
+          case when v_status = 'accepted' then now() else null end)
+  returning id into v_new_id;
+
+  return query select v_new_id, v_status;
 end;
 $$;
 

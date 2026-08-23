@@ -50,6 +50,7 @@ type WalkerProfile = {
   years_experience: number | null;
   available_now: boolean;
   video_url: string | null;
+  auto_accept_returning: boolean;
 };
 
 export default function ProfileEditPage() {
@@ -75,6 +76,7 @@ export default function ProfileEditPage() {
   const [experience, setExperience] = useState<number | "">("");
   const [videoUrl, setVideoUrl] = useState("");
   const [availableNow, setAvailableNow] = useState(true);
+  const [autoAcceptReturning, setAutoAcceptReturning] = useState(false);
   const [savingWalker, setSavingWalker] = useState(false);
   const [walkerSaved, setWalkerSaved] = useState(false);
   const [walkerError, setWalkerError] = useState<string | null>(null);
@@ -104,7 +106,7 @@ export default function ProfileEditPage() {
     if (me.role === "walker" || me.role === "both") {
       const { data: w } = await supabase
         .from("walker_profiles")
-        .select("bio, hourly_rate_ils, service_areas, dog_size_compatibility, specialties, years_experience, available_now, video_url")
+        .select("bio, hourly_rate_ils, service_areas, dog_size_compatibility, specialties, years_experience, available_now, video_url, auto_accept_returning")
         .eq("id", me.id)
         .maybeSingle();
       if (w) {
@@ -117,6 +119,7 @@ export default function ProfileEditPage() {
         setExperience(w.years_experience ?? "");
         setAvailableNow(w.available_now);
         setVideoUrl(w.video_url ?? "");
+        setAutoAcceptReturning(w.auto_accept_returning);
       }
     }
 
@@ -172,6 +175,7 @@ export default function ProfileEditPage() {
         years_experience: experience === "" ? null : experience,
         available_now: availableNow,
         video_url: videoUrl || null,
+        auto_accept_returning: autoAcceptReturning,
       })
       .eq("id", profile.id);
     setSavingWalker(false);
@@ -216,7 +220,7 @@ export default function ProfileEditPage() {
         dog_size_compatibility: [...DOG_SIZES],
         specialties: [],
       })
-      .select("bio, hourly_rate_ils, service_areas, dog_size_compatibility, specialties, years_experience, available_now, video_url")
+      .select("bio, hourly_rate_ils, service_areas, dog_size_compatibility, specialties, years_experience, available_now, video_url, auto_accept_returning")
       .single();
     setUpgrading(false);
     if (walkerInsertError || !w) {
@@ -231,6 +235,7 @@ export default function ProfileEditPage() {
     setSpecialties(w.specialties);
     setAvailableNow(w.available_now);
     setVideoUrl(w.video_url ?? "");
+    setAutoAcceptReturning(w.auto_accept_returning);
   }
 
   if (!ready || !profile) return <Loading />;
@@ -345,6 +350,19 @@ export default function ProfileEditPage() {
           <label className="flex items-center gap-2 text-sm font-semibold">
             <input type="checkbox" checked={availableNow} onChange={(e) => setAvailableNow(e.target.checked)} />
             זמין/ה לבקשות חדשות
+          </label>
+          <label className="flex flex-col gap-1 text-sm font-semibold">
+            <span className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={autoAcceptReturning}
+                onChange={(e) => setAutoAcceptReturning(e.target.checked)}
+              />
+              אישור אוטומטי ללקוחות חוזרים
+            </span>
+            <span className="text-xs font-normal text-ink/60">
+              בעל/ת כלב שכבר סיימתם איתה הליכה בעבר — הבקשות הבאות שלה יאושרו אוטומטית בלי לחכות לאישור שלכם.
+            </span>
           </label>
           <button type="submit" disabled={savingWalker} className="self-start rounded bg-brass px-4 py-1.5 text-sm font-bold text-ink disabled:opacity-60">
             {savingWalker ? "שומר..." : "שמירה"}

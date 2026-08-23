@@ -149,3 +149,8 @@ export type Specialty = (typeof SPECIALTIES)[number];
 export const DOG_SIZES = ["קטן", "בינוני", "גדול"] as const;
 
 export type DogSize = (typeof DOG_SIZES)[number];
+
+/** Any approved walker whose profile predates this gets the "מבין הראשונים"
+ * badge — a non-monetary thank-you for joining during manual bootstrapping,
+ * fixed at the date this was introduced rather than a rolling window. */
+export const EARLY_ADOPTER_CUTOFF = new Date("2026-08-24T00:00:00Z");

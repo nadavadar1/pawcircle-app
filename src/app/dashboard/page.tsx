@@ -8,6 +8,8 @@ import { BookingStatusBadge, statusBorderClass } from "@/components/BookingStatu
 import { BookingStatusTimeline } from "@/components/BookingStatusTimeline";
 import { WalkPhotoUpload } from "@/components/WalkPhotoUpload";
 import { ReportButton } from "@/components/ReportButton";
+import { WhatsAppContactButton } from "@/components/WhatsAppContactButton";
+import { avatarColorFor } from "@/lib/avatar";
 
 // Flip to true once the walk_photo_url / set_walk_photo / walk-photos
 // migration has been run against the live database.
@@ -52,6 +54,7 @@ export default function DashboardPage() {
   const [ready, setReady] = useState(false);
   const [isWalker, setIsWalker] = useState(false);
   const [walkerStatus, setWalkerStatus] = useState<string | null>(null);
+  const [ownName, setOwnName] = useState<string>("");
   const [availableNow, setAvailableNow] = useState(true);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [ownerNames, setOwnerNames] = useState<Map<string, string>>(new Map());
@@ -69,6 +72,12 @@ export default function DashboardPage() {
       router.replace("/login");
       return;
     }
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", userData.user.id)
+      .maybeSingle()
+      .then(({ data }) => setOwnName(data?.full_name ?? ""));
 
     const { data: walkerProfile } = await supabase
       .from("walker_profiles")
@@ -271,7 +280,12 @@ export default function DashboardPage() {
           {bookings.map((b) => (
             <li className={`rounded border-r-4 border-y border-l border-line bg-paper-hi p-4 ${statusBorderClass(b.status)}`} key={b.id}>
               <div className="mb-1 flex items-center justify-between gap-2">
-                <span className="font-semibold text-ink">
+                <span className="flex items-center gap-2 font-semibold text-ink">
+                  <span
+                    className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-paper-hi ${avatarColorFor(ownerNames.get(b.owner_id) ?? "ב")}`}
+                  >
+                    {(ownerNames.get(b.owner_id) ?? "ב").charAt(0)}
+                  </span>
                   {ownerNames.get(b.owner_id) ?? "בעל/ת כלב"} · {dogNames.get(b.dog_id) ?? "כלב"}
                 </span>
                 <BookingStatusBadge status={b.status} label={STATUS_LABEL[b.status] ?? b.status} />
@@ -324,9 +338,17 @@ export default function DashboardPage() {
                   )}
                 {contactByBooking.has(b.id) && (
                   <div className="w-full">
-                    <p className="text-sm font-[var(--font-mono)] text-pine" dir="ltr">
-                      {contactByBooking.get(b.id)}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-[var(--font-mono)] text-pine" dir="ltr">
+                        {contactByBooking.get(b.id)}
+                      </p>
+                      <WhatsAppContactButton
+                        phone={contactByBooking.get(b.id)!}
+                        viewerName={ownName}
+                        dogName={dogNames.get(b.dog_id) ?? "הכלב"}
+                        date={b.requested_time}
+                      />
+                    </div>
                     <p className="mt-1 text-xs text-ink/50">
                       התשלום ישירות מהבעלים (בד&quot;כ מזומן או ביט בתום ההליכה) — לא דרך האפליקציה.
                     </p>

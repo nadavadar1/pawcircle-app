@@ -11,6 +11,8 @@ import { BookingStatusBadge, statusBorderClass } from "@/components/BookingStatu
 import { BookingStatusTimeline } from "@/components/BookingStatusTimeline";
 import { ReportButton } from "@/components/ReportButton";
 import { WhatsAppShareButton } from "@/components/WhatsAppShareButton";
+import { WhatsAppContactButton } from "@/components/WhatsAppContactButton";
+import { avatarColorFor } from "@/lib/avatar";
 
 // Flip to true once the reports table migration has been run against the
 // live database.
@@ -40,6 +42,7 @@ export default function MyBookingsPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [ownName, setOwnName] = useState<string>("");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [walkerNames, setWalkerNames] = useState<Map<string, string>>(new Map());
   const [dogNames, setDogNames] = useState<Map<string, string>>(new Map());
@@ -56,6 +59,12 @@ export default function MyBookingsPage() {
       return;
     }
     setUserId(userData.user.id);
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", userData.user.id)
+      .maybeSingle()
+      .then(({ data }) => setOwnName(data?.full_name ?? ""));
 
     const { data: bookingsData } = await supabase
       .from("bookings")
@@ -152,7 +161,12 @@ export default function MyBookingsPage() {
           {bookings.map((b) => (
             <li className={`rounded border-r-4 border-y border-l border-line bg-paper-hi p-4 ${statusBorderClass(b.status)}`} key={b.id}>
               <div className="mb-1 flex items-center justify-between gap-2">
-                <span className="font-semibold text-ink">
+                <span className="flex items-center gap-2 font-semibold text-ink">
+                  <span
+                    className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-paper-hi ${avatarColorFor(walkerNames.get(b.walker_id) ?? "מ")}`}
+                  >
+                    {(walkerNames.get(b.walker_id) ?? "מ").charAt(0)}
+                  </span>
                   {walkerNames.get(b.walker_id) ?? "מטייל/ת"} · {dogNames.get(b.dog_id) ?? "כלב"}
                 </span>
                 <BookingStatusBadge status={b.status} label={STATUS_LABEL[b.status] ?? b.status} />
@@ -215,9 +229,17 @@ export default function MyBookingsPage() {
                 )}
                 {contactByBooking.has(b.id) && (
                   <div className="w-full">
-                    <p className="text-sm font-[var(--font-mono)] text-pine" dir="ltr">
-                      {contactByBooking.get(b.id)}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-[var(--font-mono)] text-pine" dir="ltr">
+                        {contactByBooking.get(b.id)}
+                      </p>
+                      <WhatsAppContactButton
+                        phone={contactByBooking.get(b.id)!}
+                        viewerName={ownName}
+                        dogName={dogNames.get(b.dog_id) ?? "הכלב"}
+                        date={b.requested_time}
+                      />
+                    </div>
                     <p className="mt-1 text-xs text-ink/50">
                       התשלום ישירות בין הצדדים (בד&quot;כ מזומן או ביט בתום ההליכה) — לא דרך האפליקציה.
                     </p>

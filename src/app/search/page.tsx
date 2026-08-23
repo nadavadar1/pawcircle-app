@@ -1,9 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { CITIES, SPECIALTIES, DOG_SIZES } from "@/lib/constants";
+import { CITIES, SPECIALTIES, DOG_SIZES, EARLY_ADOPTER_CUTOFF } from "@/lib/constants";
 import { ChipMultiSelect } from "@/components/ChipMultiSelect";
 import { AreaInterestForm } from "@/components/AreaInterestForm";
+import { TrustBadge } from "@/components/TrustBadge";
 
 // Flip to true once the favorites table migration has been run against
 // the live database.
@@ -45,6 +46,7 @@ type ProfileRow = {
   photo_url: string | null;
   city: string;
   id_verified?: boolean;
+  created_at: string;
 };
 
 type TrustRow = {
@@ -85,11 +87,15 @@ export default async function SearchPage({
   let trustById = new Map<string, TrustRow>();
   let favoriteIds = new Set<string>();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   if (ids.length > 0) {
     const [{ data: profiles }, { data: trust }] = await Promise.all([
       (ID_VERIFICATION_FEATURE_ENABLED
-        ? supabase.from("profiles").select("id, full_name, photo_url, city, id_verified").in("id", ids)
-        : supabase.from("profiles").select("id, full_name, photo_url, city").in("id", ids)
+        ? supabase.from("profiles").select("id, full_name, photo_url, city, id_verified, created_at").in("id", ids)
+        : supabase.from("profiles").select("id, full_name, photo_url, city, created_at").in("id", ids)
       ).returns<ProfileRow[]>(),
       supabase.from("walker_trust_status").select("*").in("walker_id", ids).returns<TrustRow[]>(),
     ]);
@@ -97,17 +103,12 @@ export default async function SearchPage({
     trustById = new Map((trust ?? []).map((t) => [t.walker_id, t]));
   }
 
-  if (FAVORITES_FEATURE_ENABLED) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      const { data: favorites } = await supabase
-        .from("favorites")
-        .select("walker_id")
-        .eq("owner_id", user.id);
-      favoriteIds = new Set((favorites ?? []).map((f) => f.walker_id));
-    }
+  if (FAVORITES_FEATURE_ENABLED && user) {
+    const { data: favorites } = await supabase
+      .from("favorites")
+      .select("walker_id")
+      .eq("owner_id", user.id);
+    favoriteIds = new Set((favorites ?? []).map((f) => f.walker_id));
   }
 
   const results = (walkers ?? [])
@@ -147,32 +148,36 @@ export default async function SearchPage({
         </p>
       </div>
 
-      <div className="mb-8 flex flex-col items-center justify-between gap-3 rounded-lg border border-brass/40 bg-brass/10 px-5 py-4 sm:flex-row">
-        <p className="text-sm font-semibold text-ink">
-          🐾 אוהבים כלבים ורוצים להרוויח מהליכות? אפשר להירשם כמטיילים בדיוק כאן.
-        </p>
-        <Link
-          href="/login"
-          className="flex-shrink-0 rounded bg-brass px-4 py-2 text-sm font-bold text-ink hover:bg-brass-hi"
-        >
-          הצטרפות כמטייל/ת
-        </Link>
-      </div>
-
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {[
-          { step: "1", text: "מחפשים מטייל/ת לפי אזור, תקציב וגודל הכלב" },
-          { step: "2", text: "שולחים בקשת הליכה עם תאריך ושעה" },
-          { step: "3", text: "מקבלים אישור ופרטי קשר, ומתחילים" },
-        ].map((s) => (
-          <div key={s.step} className="flex items-start gap-3 rounded border border-line bg-paper-hi p-3">
-            <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-brass font-[var(--font-mono)] text-xs font-bold text-ink">
-              {s.step}
-            </span>
-            <p className="text-sm text-ink/80">{s.text}</p>
+      {!user && (
+        <>
+          <div className="mb-8 flex flex-col items-center justify-between gap-3 rounded-lg border border-brass/40 bg-brass/10 px-5 py-4 sm:flex-row">
+            <p className="text-sm font-semibold text-ink">
+              🐾 אוהבים כלבים ורוצים להרוויח מהליכות? אפשר להירשם כמטיילים בדיוק כאן.
+            </p>
+            <Link
+              href="/login"
+              className="flex-shrink-0 rounded bg-brass px-4 py-2 text-sm font-bold text-ink hover:bg-brass-hi"
+            >
+              הצטרפות כמטייל/ת
+            </Link>
           </div>
-        ))}
-      </div>
+
+          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {[
+              { step: "1", text: "מחפשים מטייל/ת לפי אזור, תקציב וגודל הכלב" },
+              { step: "2", text: "שולחים בקשת הליכה עם תאריך ושעה" },
+              { step: "3", text: "מקבלים אישור ופרטי קשר, ומתחילים" },
+            ].map((s) => (
+              <div key={s.step} className="flex items-start gap-3 rounded border border-line bg-paper-hi p-3">
+                <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-brass font-[var(--font-mono)] text-xs font-bold text-ink">
+                  {s.step}
+                </span>
+                <p className="text-sm text-ink/80">{s.text}</p>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       <h2 className="mb-4 text-lg font-bold text-pine">חיפוש מטיילים</h2>
 
@@ -239,33 +244,38 @@ export default async function SearchPage({
                           className="h-2 w-2 flex-shrink-0 rounded-full bg-sage"
                         />
                       )}
+                      {new Date(profile!.created_at) < EARLY_ADOPTER_CUTOFF && (
+                        <span
+                          title="מבין הראשונים ב-PawCircle"
+                          className="rounded-full border border-line px-1.5 py-0.5 text-[10px] font-semibold text-ink/50"
+                        >
+                          מבין הראשונים
+                        </span>
+                      )}
                     </span>
                     <span className="font-[var(--font-mono)] text-sm text-pine">
                       {walker.hourly_rate_ils} ₪/שעה
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm text-ink/70">{profile!.city}</p>
+                  <TrustBadge
+                    isCommunityVerified={trust?.is_community_verified}
+                    badgeArea={trust?.badge_area}
+                    idVerified={ID_VERIFICATION_FEATURE_ENABLED && profile!.id_verified}
+                  />
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <p className="text-xs text-ink/60">{profile!.city}</p>
                     {walker.available_now && (
-                      <p className="text-xs font-semibold text-sage">זמין/ה עכשיו</p>
+                      <p className="text-xs text-ink/60">· זמין/ה עכשיו</p>
                     )}
                     {trust && trust.review_count > 0 && (
-                      <p className="text-sm font-bold text-brass-hi">
-                        ★ {trust.avg_rating} ({trust.review_count})
+                      <p className="text-xs text-ink/60">
+                        · ★ {trust.avg_rating} ({trust.review_count})
                       </p>
                     )}
+                    {walker.specialties.length > 0 && (
+                      <p className="text-xs text-ink/60">· {walker.specialties.join(" · ")}</p>
+                    )}
                   </div>
-                  {trust?.is_community_verified && (
-                    <p className="mt-1 text-xs font-bold text-pine">
-                      ✓ מאומת קהילתית · {trust.badge_area}
-                    </p>
-                  )}
-                  {ID_VERIFICATION_FEATURE_ENABLED && profile!.id_verified && (
-                    <p className="mt-1 text-xs font-bold text-pine">✓ זהות מאומתת</p>
-                  )}
-                  {walker.specialties.length > 0 && (
-                    <p className="mt-1 text-xs text-ink/60">{walker.specialties.join(" · ")}</p>
-                  )}
                 </div>
               </Link>
             </li>

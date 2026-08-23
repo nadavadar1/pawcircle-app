@@ -7,6 +7,9 @@ import { BookingRequestForm } from "@/components/BookingRequestForm";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { WhatsAppShareButton } from "@/components/WhatsAppShareButton";
 import { ReportButton } from "@/components/ReportButton";
+import { TrustBadge } from "@/components/TrustBadge";
+import { avatarColorFor } from "@/lib/avatar";
+import { EARLY_ADOPTER_CUTOFF } from "@/lib/constants";
 
 // Flip to true once the favorites table migration has been run against
 // the live database.
@@ -19,13 +22,6 @@ const REPORT_FEATURE_ENABLED = true;
 // Flip to true once the id_document_url/id_verified columns migration has
 // been run against the live database.
 const ID_VERIFICATION_FEATURE_ENABLED = true;
-
-const AVATAR_COLORS = ["bg-pine", "bg-rust", "bg-brass", "bg-sage"];
-
-function avatarColorFor(name: string) {
-  const code = name.charCodeAt(0) || 0;
-  return AVATAR_COLORS[code % AVATAR_COLORS.length];
-}
 
 export async function generateMetadata({
   params,
@@ -70,8 +66,8 @@ export default async function WalkerProfilePage({
     await Promise.all([
       supabase.from("walker_profiles").select("*").eq("id", id).eq("status", "approved").maybeSingle(),
       ID_VERIFICATION_FEATURE_ENABLED
-        ? supabase.from("profiles").select("id, full_name, photo_url, city, id_verified").eq("id", id).maybeSingle()
-        : supabase.from("profiles").select("id, full_name, photo_url, city").eq("id", id).maybeSingle(),
+        ? supabase.from("profiles").select("id, full_name, photo_url, city, id_verified, created_at").eq("id", id).maybeSingle()
+        : supabase.from("profiles").select("id, full_name, photo_url, city, created_at").eq("id", id).maybeSingle(),
       supabase.from("walker_trust_status").select("*").eq("walker_id", id).maybeSingle(),
       supabase.from("reviews").select("*").eq("walker_id", id).order("created_at", { ascending: false }),
     ]);
@@ -166,36 +162,41 @@ export default async function WalkerProfilePage({
                   {walker.available_now && (
                     <span title="זמין/ה עכשיו" className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-sage" />
                   )}
+                  {new Date(profile.created_at) < EARLY_ADOPTER_CUTOFF && (
+                    <span
+                      title="מבין הראשונים ב-PawCircle"
+                      className="rounded-full border border-line px-1.5 py-0.5 text-[10px] font-semibold text-ink/50"
+                    >
+                      מבין הראשונים
+                    </span>
+                  )}
                 </h1>
                 <span className="rounded-full bg-brass px-3 py-1 font-[var(--font-mono)] text-sm font-bold text-ink">
                   {walker.hourly_rate_ils} ₪/שעה
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <p className="text-sm text-ink/70">{profile.city}</p>
-                {walker.available_now && <p className="text-xs font-semibold text-sage">זמין/ה עכשיו</p>}
+                <p className="text-xs text-ink/60">{profile.city}</p>
+                {walker.available_now && <p className="text-xs text-ink/60">· זמין/ה עכשיו</p>}
                 {trust && trust.review_count > 0 && (
-                  <p className="text-sm font-bold text-brass-hi">
-                    ★ {trust.avg_rating} ({trust.review_count} ביקורות)
+                  <p className="text-xs text-ink/60">
+                    · ★ {trust.avg_rating} ({trust.review_count} ביקורות)
                   </p>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="mb-3 flex flex-wrap gap-2">
-            {trust?.is_community_verified ? (
-              <p className="inline-block rounded bg-brass/20 px-2 py-1 text-xs font-bold text-pine">
-                ✓ מאומת קהילתית · {trust.badge_area}
-              </p>
+          <div className="mb-3">
+            {trust?.is_community_verified || (ID_VERIFICATION_FEATURE_ENABLED && profile.id_verified) ? (
+              <TrustBadge
+                isCommunityVerified={trust?.is_community_verified}
+                badgeArea={trust?.badge_area}
+                idVerified={ID_VERIFICATION_FEATURE_ENABLED && profile.id_verified}
+              />
             ) : (
               <p className="inline-block rounded bg-line px-2 py-1 text-xs font-semibold text-ink/60">
                 מטייל/ת חדש/ה ב-PawCircle
-              </p>
-            )}
-            {ID_VERIFICATION_FEATURE_ENABLED && profile.id_verified && (
-              <p className="inline-block rounded bg-sage/20 px-2 py-1 text-xs font-bold text-pine">
-                ✓ זהות מאומתת
               </p>
             )}
           </div>

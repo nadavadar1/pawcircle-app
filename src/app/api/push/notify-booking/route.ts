@@ -14,6 +14,10 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
 const MESSAGES: Record<string, { title: string; body: string; url: string }> = {
   requested: { title: "בקשת הליכה חדשה", body: "יש לך בקשת הליכה חדשה ב-PawCircle", url: "/dashboard" },
   accepted: { title: "הבקשה שלך אושרה!", body: "בקשת ההליכה שלך אושרה ב-PawCircle", url: "/my-bookings" },
+  // A returning owner's booking that skipped straight to "accepted" via
+  // auto_accept_returning — the walker still needs to know it landed on
+  // their schedule, even though nobody there had to click accept.
+  auto_accepted: { title: "הליכה חדשה (אושרה אוטומטית)", body: "לקוח/ה קבוע/ה קבע/ה הליכה איתך ב-PawCircle", url: "/dashboard" },
 };
 
 // Called by the client right after create_booking_request/set_booking_status
@@ -54,7 +58,7 @@ export async function POST(request: Request) {
   }
 
   let recipientId: string;
-  if (event === "requested") {
+  if (event === "requested" || event === "auto_accepted") {
     if (user.id !== booking.owner_id) {
       return NextResponse.json({ error: "not authorized" }, { status: 403 });
     }

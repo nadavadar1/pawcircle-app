@@ -44,6 +44,7 @@ export function BookingRequestForm({
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [sentCount, setSentCount] = useState(1);
+  const [autoAccepted, setAutoAccepted] = useState(false);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -120,12 +121,13 @@ export function BookingRequestForm({
 
     let succeeded = 0;
     let firstBookingId: string | null = null;
+    let firstBookingStatus: string | null = null;
     for (let i = 0; i < occurrences; i++) {
       const requestedTime = new Date(baseTime.getTime() + i * 7 * 24 * 60 * 60 * 1000).toISOString();
       // Same slot, one request per selected dog — mirrors the recurring
       // loop above exactly, just looping dogs instead of weeks.
       for (const dogId of selectedDogIds) {
-        const { data: newBookingId, error: rpcError } = await supabase.rpc("create_booking_request", {
+        const { data: rpcData, error: rpcError } = await supabase.rpc("create_booking_request", {
           p_walker_id: walkerId,
           p_dog_id: dogId,
           p_requested_time: requestedTime,
@@ -141,7 +143,15 @@ export function BookingRequestForm({
           }
           return;
         }
-        if (!firstBookingId) firstBookingId = newBookingId as string;
+        // create_booking_request returns a table (booking_id, booking_status)
+        // — supabase-js returns set-returning RPCs as an array of rows.
+        const row = (Array.isArray(rpcData) ? rpcData[0] : rpcData) as
+          | { booking_id: string; booking_status: string }
+          | undefined;
+        if (!firstBookingId) {
+          firstBookingId = row?.booking_id ?? null;
+          firstBookingStatus = row?.booking_status ?? null;
+        }
         succeeded++;
       }
     }
@@ -150,12 +160,16 @@ export function BookingRequestForm({
       fetch("/api/push/notify-booking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bookingId: firstBookingId, event: "requested" }),
+        body: JSON.stringify({
+          bookingId: firstBookingId,
+          event: firstBookingStatus === "accepted" ? "auto_accepted" : "requested",
+        }),
       }).catch(() => {});
     }
 
     setSubmitting(false);
     setSentCount(succeeded);
+    setAutoAccepted(firstBookingStatus === "accepted");
     setSent(true);
   }
 
@@ -165,7 +179,10 @@ export function BookingRequestForm({
   if (sent) {
     return (
       <p className="rounded bg-brass/20 px-3 py-2 text-sm font-semibold text-pine">
-        {sentCount > 1 ? `${sentCount} בקשות נשלחו!` : "הבקשה נשלחה!"} אפשר לעקוב אחריהן ב
+        {autoAccepted
+          ? (sentCount > 1 ? `${sentCount} הליכות אושרו אוטומטית!` : "ההליכה אושרה אוטומטית!")
+          : (sentCount > 1 ? `${sentCount} בקשות נשלחו!` : "הבקשה נשלחה!")}{" "}
+        אפשר לעקוב אחריהן ב
         <a href="/my-bookings" className="underline">
           ההליכות שלי
         </a>
