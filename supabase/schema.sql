@@ -152,6 +152,14 @@ create table stuck_user_nudges (
   sent_at timestamptz not null default now()
 );
 
+-- Tracks which accepted bookings already got the "did the walk happen? mark
+-- it completed" reminder, so the daily cron never reminds about the same
+-- booking twice.
+create table booking_completion_reminders (
+  booking_id uuid primary key references bookings(id) on delete cascade,
+  sent_at timestamptz not null default now()
+);
+
 -- A logged-in user flagging a problem with the app itself (not another
 -- user — that's `reports`). Shows up in /admin so the founder sees it there
 -- instead of relying on people finding him on WhatsApp.
@@ -285,6 +293,10 @@ alter table support_messages enable row level security;
 create policy "authenticated users can submit support messages" on support_messages
   for insert with check (user_id = auth.uid());
 
+-- booking_completion_reminders: deliberately no policies — only the service
+-- role (the remind-mark-completed cron route) ever reads or writes this.
+alter table booking_completion_reminders enable row level security;
+
 -- walker_profiles: approved walkers are publicly visible; a walker always
 -- sees their own row (e.g. while still pending_review). `status` is
 -- founder-controlled only (approval happens directly in Supabase for v1) —
@@ -405,6 +417,15 @@ begin
     v_allowed := true;
   elsif v_me = v_booking.owner_id and v_booking.status = 'accepted'
      and p_new_status = 'completed' then
+    v_allowed := true;
+  -- Fallback: the owner is the normal one to mark a walk completed (they're
+  -- the one who saw it happen from the start), but if they never come back
+  -- to do it the booking would sit in 'accepted' forever with no review ever
+  -- possible. Once the walk time is 48h in the past, the walker can also
+  -- mark it completed themselves.
+  elsif v_me = v_booking.walker_id and v_booking.status = 'accepted'
+     and p_new_status = 'completed'
+     and v_booking.requested_time + (v_booking.duration_minutes || ' minutes')::interval < now() - interval '48 hours' then
     v_allowed := true;
   end if;
 

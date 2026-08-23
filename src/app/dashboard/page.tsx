@@ -135,6 +135,23 @@ export default function DashboardPage() {
     }
   }
 
+  async function markCompleted(id: string) {
+    setBusyId(id);
+    setErrorByBooking((prev) => {
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+    const supabase = getSupabaseBrowserClient();
+    const { error } = await supabase.rpc("set_booking_status", { p_booking_id: id, p_new_status: "completed" });
+    setBusyId(null);
+    if (error) {
+      setErrorByBooking((prev) => new Map(prev).set(id, "הפעולה נכשלה, נסה שוב."));
+      return;
+    }
+    load();
+  }
+
   async function respond(id: string, status: "accepted" | "declined") {
     setBusyId(id);
     setErrorByBooking((prev) => {
@@ -270,6 +287,17 @@ export default function DashboardPage() {
                     הצגת פרטי קשר
                   </button>
                 )}
+                {b.status === "accepted" &&
+                  new Date(b.requested_time).getTime() + b.duration_minutes * 60 * 1000 <
+                    Date.now() - 48 * 60 * 60 * 1000 && (
+                    <button
+                      onClick={() => markCompleted(b.id)}
+                      disabled={busyId === b.id}
+                      className="rounded border border-line px-3 py-1 text-sm text-ink disabled:opacity-60"
+                    >
+                      סימון כהושלם (הבעלים לא סימן/ה עדיין)
+                    </button>
+                  )}
                 {contactByBooking.has(b.id) && (
                   <p className="w-full text-sm font-[var(--font-mono)] text-pine" dir="ltr">
                     {contactByBooking.get(b.id)}

@@ -161,6 +161,13 @@ export default function MyBookingsPage() {
               {b.owner_message && <p className="mt-1 text-sm text-ink/60">&rdquo;{b.owner_message}&rdquo;</p>}
               <BookingStatusTimeline status={b.status} />
 
+              {b.status === "accepted" &&
+                new Date(b.requested_time).getTime() + b.duration_minutes * 60 * 1000 < Date.now() && (
+                  <p className="mt-2 rounded bg-brass/20 px-3 py-2 text-sm font-semibold text-pine">
+                    ההליכה כבר הייתה אמורה להסתיים — התקיימה? סמנו כהושלם ותוכלו לכתוב ביקורת 🐾
+                  </p>
+                )}
+
               {b.walk_photo_url && (
                 <div className="relative mt-2 h-40 w-full overflow-hidden rounded">
                   <Image src={b.walk_photo_url} alt="" fill sizes="100vw" className="object-cover" />

@@ -121,10 +121,14 @@ export default async function SearchPage({
     .sort((a, b) => {
       const favoriteDiff = Number(b.isFavorite) - Number(a.isFavorite);
       if (favoriteDiff !== 0) return favoriteDiff;
-      const availableDiff = Number(b.walker.available_now) - Number(a.walker.available_now);
-      if (availableDiff !== 0) return availableDiff;
+      // Community-verified ranks above the manual, never-expiring
+      // "available now" toggle — the trust badge is the product's actual
+      // promise, and it shouldn't be outranked by a flag someone flipped
+      // once and forgot about.
       const verifiedDiff = Number(b.trust?.is_community_verified) - Number(a.trust?.is_community_verified);
       if (verifiedDiff !== 0) return verifiedDiff;
+      const availableDiff = Number(b.walker.available_now) - Number(a.walker.available_now);
+      if (availableDiff !== 0) return availableDiff;
       return (b.trust?.avg_rating ?? 0) - (a.trust?.avg_rating ?? 0);
     });
 
