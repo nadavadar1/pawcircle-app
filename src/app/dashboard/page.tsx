@@ -323,9 +323,14 @@ export default function DashboardPage() {
                     </button>
                   )}
                 {contactByBooking.has(b.id) && (
-                  <p className="w-full text-sm font-[var(--font-mono)] text-pine" dir="ltr">
-                    {contactByBooking.get(b.id)}
-                  </p>
+                  <div className="w-full">
+                    <p className="text-sm font-[var(--font-mono)] text-pine" dir="ltr">
+                      {contactByBooking.get(b.id)}
+                    </p>
+                    <p className="mt-1 text-xs text-ink/50">
+                      התשלום ישירות מהבעלים (בד&quot;כ מזומן או ביט בתום ההליכה) — לא דרך האפליקציה.
+                    </p>
+                  </div>
                 )}
                 {errorByBooking.has(b.id) && (
                   <p className="w-full text-sm text-rust">{errorByBooking.get(b.id)}</p>

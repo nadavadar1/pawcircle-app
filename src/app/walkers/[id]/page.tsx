@@ -202,6 +202,17 @@ export default async function WalkerProfilePage({
 
           {walker.bio && <p className="mb-4 text-ink/90">{walker.bio}</p>}
 
+          {walker.video_url && (
+            <a
+              href={walker.video_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-rust hover:underline"
+            >
+              ▶ צפייה בסרטון הצגה עצמית
+            </a>
+          )}
+
           <dl className="mb-1 grid grid-cols-1 gap-x-4 gap-y-2 border-t border-line pt-4 text-sm sm:grid-cols-2">
             {walker.specialties.length > 0 && (
               <div>

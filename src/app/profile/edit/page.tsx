@@ -49,6 +49,7 @@ type WalkerProfile = {
   specialties: string[];
   years_experience: number | null;
   available_now: boolean;
+  video_url: string | null;
 };
 
 export default function ProfileEditPage() {
@@ -72,6 +73,7 @@ export default function ProfileEditPage() {
   const [dogSizes, setDogSizes] = useState<string[]>([...DOG_SIZES]);
   const [specialties, setSpecialties] = useState<string[]>([]);
   const [experience, setExperience] = useState<number | "">("");
+  const [videoUrl, setVideoUrl] = useState("");
   const [availableNow, setAvailableNow] = useState(true);
   const [savingWalker, setSavingWalker] = useState(false);
   const [walkerSaved, setWalkerSaved] = useState(false);
@@ -102,7 +104,7 @@ export default function ProfileEditPage() {
     if (me.role === "walker" || me.role === "both") {
       const { data: w } = await supabase
         .from("walker_profiles")
-        .select("bio, hourly_rate_ils, service_areas, dog_size_compatibility, specialties, years_experience, available_now")
+        .select("bio, hourly_rate_ils, service_areas, dog_size_compatibility, specialties, years_experience, available_now, video_url")
         .eq("id", me.id)
         .maybeSingle();
       if (w) {
@@ -114,6 +116,7 @@ export default function ProfileEditPage() {
         setSpecialties(w.specialties);
         setExperience(w.years_experience ?? "");
         setAvailableNow(w.available_now);
+        setVideoUrl(w.video_url ?? "");
       }
     }
 
@@ -168,6 +171,7 @@ export default function ProfileEditPage() {
         specialties,
         years_experience: experience === "" ? null : experience,
         available_now: availableNow,
+        video_url: videoUrl || null,
       })
       .eq("id", profile.id);
     setSavingWalker(false);
@@ -212,7 +216,7 @@ export default function ProfileEditPage() {
         dog_size_compatibility: [...DOG_SIZES],
         specialties: [],
       })
-      .select("bio, hourly_rate_ils, service_areas, dog_size_compatibility, specialties, years_experience, available_now")
+      .select("bio, hourly_rate_ils, service_areas, dog_size_compatibility, specialties, years_experience, available_now, video_url")
       .single();
     setUpgrading(false);
     if (walkerInsertError || !w) {
@@ -226,6 +230,7 @@ export default function ProfileEditPage() {
     setDogSizes(w.dog_size_compatibility);
     setSpecialties(w.specialties);
     setAvailableNow(w.available_now);
+    setVideoUrl(w.video_url ?? "");
   }
 
   if (!ready || !profile) return <Loading />;
@@ -325,6 +330,17 @@ export default function ProfileEditPage() {
           <label className="flex flex-col gap-1 text-xs font-semibold">
             שנות ניסיון
             <input type="number" min={0} value={experience} onChange={(e) => setExperience(e.target.value === "" ? "" : Number(e.target.value))} className="rounded border border-line bg-paper px-2 py-1.5 font-normal" />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold">
+            קישור לסרטון הצגה עצמית (אופציונלי)
+            <input
+              type="url"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="קישור ל-YouTube / Instagram Reel"
+              dir="ltr"
+              className="rounded border border-line bg-paper px-2 py-1.5 font-normal"
+            />
           </label>
           <label className="flex items-center gap-2 text-sm font-semibold">
             <input type="checkbox" checked={availableNow} onChange={(e) => setAvailableNow(e.target.checked)} />

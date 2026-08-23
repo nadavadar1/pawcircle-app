@@ -35,6 +35,7 @@ export default function OnboardingPage() {
   const [dogSizes, setDogSizes] = useState<string[]>([...DOG_SIZES]);
   const [specialties, setSpecialties] = useState<string[]>([]);
   const [yearsExperience, setYearsExperience] = useState<number | "">("");
+  const [videoUrl, setVideoUrl] = useState("");
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -95,6 +96,7 @@ export default function OnboardingPage() {
         dog_size_compatibility: dogSizes,
         specialties,
         years_experience: yearsExperience === "" ? null : yearsExperience,
+        video_url: videoUrl || null,
       });
 
       if (walkerError) {
@@ -235,6 +237,21 @@ export default function OnboardingPage() {
                 }
                 className="rounded border border-line bg-paper px-3 py-2 font-normal"
               />
+            </label>
+
+            <label className="flex flex-col gap-1 text-sm font-semibold">
+              קישור לסרטון הצגה עצמית (אופציונלי)
+              <input
+                type="url"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="קישור ל-YouTube / Instagram Reel"
+                dir="ltr"
+                className="rounded border border-line bg-paper px-3 py-2 font-normal"
+              />
+              <span className="text-xs font-normal text-ink/50">
+                15 שניות "זה אני, ככה אני מטייל" עוזרות ליצור אמון יותר מכל תג
+              </span>
             </label>
           </>
         )}
