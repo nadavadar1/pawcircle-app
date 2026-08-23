@@ -51,6 +51,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [isWalker, setIsWalker] = useState(false);
+  const [walkerStatus, setWalkerStatus] = useState<string | null>(null);
   const [availableNow, setAvailableNow] = useState(true);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [ownerNames, setOwnerNames] = useState<Map<string, string>>(new Map());
@@ -71,7 +72,7 @@ export default function DashboardPage() {
 
     const { data: walkerProfile } = await supabase
       .from("walker_profiles")
-      .select("available_now")
+      .select("available_now, status")
       .eq("id", userData.user.id)
       .maybeSingle();
 
@@ -81,6 +82,7 @@ export default function DashboardPage() {
       return;
     }
     setIsWalker(true);
+    setWalkerStatus(walkerProfile.status);
     setAvailableNow(walkerProfile.available_now);
 
     const { data: trustData } = await supabase
@@ -201,6 +203,28 @@ export default function DashboardPage() {
       <main className="mx-auto max-w-2xl px-6 py-16 text-center">
         <h1 className="mb-2 text-2xl font-bold text-pine">לוח הבקשות</h1>
         <p className="text-ink/70">המסך הזה מיועד למטיילים. בעלי כלבים רואים את הבקשות שלהם ב-<a href="/my-bookings" className="text-rust underline">ההליכות שלי</a>.</p>
+      </main>
+    );
+  }
+
+  if (walkerStatus === "pending_review") {
+    return (
+      <main className="mx-auto max-w-2xl px-6 py-16 text-center">
+        <h1 className="mb-2 text-2xl font-bold text-pine">הבקשה שלך ממתינה לאישור</h1>
+        <p className="text-ink/70">
+          אנחנו בודקים כל מטייל/ת חדש/ה באופן ידני לפני שהפרופיל נהיה גלוי בחיפוש. זה בדרך כלל לוקח יום-יומיים. נעדכן אותך ברגע שזה אושר.
+        </p>
+      </main>
+    );
+  }
+
+  if (walkerStatus === "paused") {
+    return (
+      <main className="mx-auto max-w-2xl px-6 py-16 text-center">
+        <h1 className="mb-2 text-2xl font-bold text-pine">הפרופיל שלך מושעה זמנית</h1>
+        <p className="text-ink/70">
+          הפרופיל שלך לא גלוי כרגע בחיפוש. אם זה נראה לך לא נכון, אפשר ליצור קשר דרך <a href="/help" className="text-rust underline">יש בעיה?</a>.
+        </p>
       </main>
     );
   }
