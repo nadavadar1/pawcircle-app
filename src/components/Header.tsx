@@ -8,7 +8,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 declare global {
   interface Window {
-    goatcounter?: { count: (opts: { path: string; title?: string }) => void };
+    goatcounter?: { count: (opts: { path: string; title?: string; event?: boolean }) => void };
   }
 }
 
@@ -36,6 +36,24 @@ export function Header() {
   useEffect(() => {
     const ref = new URLSearchParams(window.location.search).get("ref");
     if (ref) localStorage.setItem("pawcircle_ref", ref);
+  }, []);
+
+  // A marketing link tagged with ?campaign=<name> (e.g. a specific vet's
+  // QR code, a specific Facebook group post) fires a distinct GoatCounter
+  // event on landing, so it shows up separately from the "unknown" bucket
+  // instead of being indistinguishable direct/WhatsApp traffic. Read from
+  // the raw URL (not useSearchParams) so this component — mounted in the
+  // root layout — doesn't force every page into dynamic rendering.
+  useEffect(() => {
+    const campaign = new URLSearchParams(window.location.search).get("campaign");
+    if (!campaign) return;
+    if (sessionStorage.getItem("pawcircle_campaign_sent") === campaign) return;
+    sessionStorage.setItem("pawcircle_campaign_sent", campaign);
+    window.goatcounter?.count({
+      path: `/campaign/${campaign}`,
+      title: `קמפיין: ${campaign}`,
+      event: true,
+    });
   }, []);
 
   useEffect(() => {
